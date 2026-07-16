@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACCO Photo — Administration</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+/* ── BLACK & GOLD THEME ─────────────────────────────── */
+:root{
+  --gold:#D4AF37;--gold-dim:#7a6018;--gold-dark:#1e1a08;
+  --red:#cc1f3a;--bg:#080806;--surface:#0e0d08;--border:#1e1a08;
+  --text:#e0d0a0;--text-dim:#6a5a18;--text-muted:#3a2e0a;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;}
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-box{background:var(--surface);border-radius:16px;padding:36px;width:320px;text-align:center;border:1px solid var(--border);}
+.login-box h2{margin:0 0 24px;font-size:20px;color:var(--red);font-weight:800;letter-spacing:1px;}
+.login-box input{width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:14px;background:var(--bg);color:var(--text);}
+.login-box input:focus{outline:none;border-color:var(--gold);}
+.login-box button{width:100%;padding:12px;background:var(--gold);color:var(--bg);border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700;}
+.login-box button:hover{background:#c9a030;}
+.login-err{color:var(--red);font-size:13px;margin-top:8px;}
+.hidden{display:none!important;}
+/* Layout */
+.admin-wrap{display:none;min-height:100vh;}
+.topbar{background:var(--surface);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+.topbar-logo{margin:0;font-size:18px;font-weight:800;color:var(--red);letter-spacing:0.5px;}
+.stats{font-size:11px;color:var(--gold-dim);}
+/* Lang selector */
+.lang-wrap{position:relative;display:flex;align-items:center;gap:3px;cursor:pointer;}
+.lang-label{font-size:9px;color:var(--gold-dim);letter-spacing:2px;font-weight:700;transition:color 0.2s;pointer-events:none;}
+.lang-wrap:hover .lang-label{color:var(--gold);}
+.lang-dot{width:3px;height:3px;border-radius:50%;background:var(--gold);opacity:0.4;pointer-events:none;}
+.lang-select-hidden{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:16px;}
+.admin-badge{font-size:9px;color:var(--gold);opacity:0.35;letter-spacing:3px;}
+/* Tabs */
+.tab-bar{display:flex;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;}
+.tab-btn{padding:13px 18px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;transition:0.15s;margin:0;letter-spacing:0.3px;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-btn:hover{color:var(--text-dim);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.main{padding:20px 24px;max-width:1100px;margin:0 auto;}
+/* Action buttons */
+.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.filters select,.filters input{padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;}
+.filters select:focus,.filters input:focus{outline:none;border-color:var(--gold-dim);}
+.btn-primary{background:var(--gold);color:var(--bg);border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:700;}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-success{background:transparent;color:#4ade80;border:1px solid #4ade80;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;}
+.btn-warn{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;}
+.btn-sm{padding:4px 11px;font-size:12px;border-radius:5px;cursor:pointer;margin:2px;font-weight:600;}
+/* Order cards */
+.order-card{background:var(--surface);border-radius:10px;padding:16px 18px;margin-bottom:12px;border:0.5px solid var(--border);}
+.order-card.pending{border-left:3px solid var(--red);}
+.order-card.ready{border-left:3px solid var(--gold);}
+.order-card.notified{border-left:3px solid var(--border);opacity:0.6;}
+.order-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.order-num{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px;letter-spacing:0.3px;}
+.order-client{font-size:15px;font-weight:700;color:var(--text);}
+.order-meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
+.order-date{font-size:11px;color:var(--text-muted);margin-top:5px;}
+.status-badge{padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-pending{background:transparent;color:var(--red);border:0.5px solid var(--red);}
+.badge-awaiting{background:transparent;color:#f59e0b;border:0.5px solid #f59e0b;}
+.badge-paid{background:transparent;color:var(--gold);border:0.5px solid var(--gold-dim);}
+.badge-ready{background:transparent;color:#4ade80;border:0.5px solid #4ade80;}
+.badge-notified{background:transparent;color:var(--text-muted);border:0.5px solid var(--border);}
+.order-items{margin-top:10px;border-top:0.5px solid var(--border);padding-top:10px;}
+.order-item{font-size:12px;color:var(--text-dim);padding:4px 0;border-bottom:0.5px solid var(--bg);}
+.order-item:last-child{border-bottom:none;}
+.order-actions{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;}
+.order-links{margin-top:6px;}
+.order-links a{color:var(--gold-dim);font-size:12px;word-break:break-all;}
+.order-links a:hover{color:var(--gold);}
+/* Manual notify */
+.manual-card{background:var(--surface);border-radius:10px;padding:18px;margin-bottom:16px;border:0.5px solid var(--border);}
+.manual-card h3{margin:0 0 12px;font-size:14px;color:var(--gold);font-weight:700;letter-spacing:0.5px;}
+.manual-card input,.manual-card select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;margin-bottom:9px;}
+.manual-card input:focus,.manual-card select:focus{outline:none;border-color:var(--gold-dim);}
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.empty-state .icon{font-size:42px;margin-bottom:12px;opacity:0.3;}
+/* Notif result */
+.notif-result{font-size:13px;margin-top:8px;padding:8px 12px;border-radius:6px;}
+.notif-ok{background:#0a180c;color:#4ade80;border:0.5px solid #4ade80;}
+.notif-err{background:#180a0a;color:var(--red);border:0.5px solid var(--red);}
+/* Doc badge */
+.doc-badge{background:transparent;color:#a78bfa;border:0.5px solid #a78bfa;font-size:10px;padding:1px 7px;border-radius:4px;margin-left:6px;}
+/* Password modal */
+.pwd-modal-inner input{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;margin-bottom:10px;}
+.pwd-modal-inner input:focus{outline:none;border-color:var(--gold-dim);}
+
+.pwd-wrap{position:relative;width:100%;display:block;}
+.pwd-wrap input{width:100%!important;padding-right:40px!important;box-sizing:border-box!important;margin-bottom:14px!important;background:var(--bg)!important;color:var(--text)!important;display:block!important;}
+.pwd-eye{position:absolute!important;right:12px!important;top:50%!important;transform:translateY(-80%)!important;width:auto!important;height:auto!important;min-width:0!important;padding:0!important;margin:0!important;font-size:15px!important;line-height:1!important;background:none!important;border:none!important;color:var(--gold-dim)!important;cursor:pointer;user-select:none;z-index:3;}
+.pwd-eye:hover{color:var(--gold)!important;}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h2>ACCO Photo Admin</h2>
+    <div class="pwd-wrap"><input type="password" id="pwdInput" placeholder="Mot de passe / Password" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="pwd-eye" onclick="togglePwdVis('pwdInput',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+    <button onclick="doLogin()" id="loginBtn">Sign In</button>
+    <div class="login-err hidden" id="loginErr">Mot de passe incorrect.</div>
+    <div style="margin-top:14px;">
+      <a href="#" onclick="showResetPwd();return false;" id="forgotPwdLink" style="font-size:12px;color:var(--gold-dim);text-decoration:none;letter-spacing:0.3px;">Mot de passe oublié / Forgot password?</a>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Panel -->
+<div class="login-wrap hidden" id="resetWrap">
+  <div class="login-box" style="width:360px;max-width:95vw;">
+    <h2 id="t_resetTitle" style="margin-bottom:16px;">Réinitialiser le mot de passe</h2>
+
+    <!-- Method tabs -->
+    <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <button onclick="switchResetMethod('code')" id="rmTab_code"
+        style="flex:1;padding:8px 4px;font-size:11px;border:none;cursor:pointer;background:var(--gold);color:#080806;font-weight:700;">🔑 Code</button>
+      <button onclick="switchResetMethod('master')" id="rmTab_master"
+        style="flex:1;padding:8px 4px;font-size:11px;border:none;cursor:pointer;background:var(--surface);color:var(--gold-dim);border-left:1px solid var(--border);">🔐 Mot de passe principal</button>
+      <button onclick="switchResetMethod('qa')" id="rmTab_qa"
+        style="flex:1;padding:8px 4px;font-size:11px;border:none;cursor:pointer;background:var(--surface);color:var(--gold-dim);border-left:1px solid var(--border);">❓ Questions</button>
+    </div>
+
+    <!-- Method 1: Recovery code -->
+    <div id="rm_code">
+      <p style="font-size:12px;color:var(--gold-dim);margin-bottom:12px;" id="t_resetCodeHint">Entrez le code de récupération (disponible dans les paramètres ⚙️).</p>
+      <div class="pwd-wrap">
+        <input type="password" id="resetCodeInput" placeholder="Code de récupération" style="font-family:monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:0;">
+        <button type="button" class="pwd-eye" onclick="togglePwdVis('resetCodeInput',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Method 2: Master password -->
+    <div id="rm_master" class="hidden">
+      <p style="font-size:12px;color:var(--gold-dim);margin-bottom:12px;" id="t_resetMasterHint">Entrez votre mot de passe principal (configuré dans les paramètres).</p>
+      <div class="pwd-wrap"><input type="password" id="resetMasterInput" placeholder="Mot de passe principal"><button type="button" class="pwd-eye" onclick="togglePwdVis('resetMasterInput',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+    </div>
+
+    <!-- Method 3: Security questions -->
+    <div id="rm_qa" class="hidden">
+      <p style="font-size:12px;color:var(--gold-dim);margin-bottom:12px;" id="t_resetQAHint">Répondez aux questions de sécurité configurées dans les paramètres.</p>
+      <div id="qaResetFields"></div>
+    </div>
+
+    <!-- New password (common) -->
+    <div style="margin-top:4px;border-top:1px solid var(--border);padding-top:14px;">
+      <div class="pwd-wrap"><input type="password" id="resetNewPwd1" placeholder="Nouveau mot de passe"><button type="button" class="pwd-eye" onclick="togglePwdVis('resetNewPwd1',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <div class="pwd-wrap"><input type="password" id="resetNewPwd2" placeholder="Confirmer le mot de passe"><button type="button" class="pwd-eye" onclick="togglePwdVis('resetNewPwd2',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <button onclick="doResetPwd()" style="width:100%;margin-bottom:8px;background:var(--gold);color:#080806;font-weight:700;" id="t_resetBtn">Réinitialiser</button>
+    </div>
+
+    <div class="login-err hidden" id="resetErr"></div>
+    <div style="margin-top:10px;">
+      <a href="#" onclick="showLogin();return false;" style="font-size:12px;color:var(--gold-dim);text-decoration:none;">← Retour / Back</a>
+    </div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div class="admin-wrap" id="adminWrap">
+  <div class="topbar">
+    <h1 class="topbar-logo">ACCO Photo</h1>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="stats" id="statsBar"></div>
+      <div class="lang-wrap" title="Langue / Language / 语言">
+        <span class="lang-dot"></span>
+        <span class="lang-label" id="langLabelDisplay">FR</span>
+        <select id="adminLang" class="lang-select-hidden" onchange="applyAdminLang(this.value);document.getElementById('langLabelDisplay').textContent=this.value.toUpperCase();">
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+      </div>
+      <span class="admin-badge">ADMIN</span>
+      <button onclick="openChangePwd()" title="Paramètres" style="background:none;border:none;color:#3a2e0a;font-size:15px;cursor:pointer;padding:2px;margin:0;transition:color 0.2s;" onmouseover="this.style.color='#D4AF37'" onmouseout="this.style.color='#3a2e0a'">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('photo')">📸 Impressions photo <span id="photoBadge" style="background:#D4AF37;color:#080806;border-radius:4px;padding:1px 7px;font-size:10px;margin-left:4px;font-weight:700;">0</span></button>
+    <button class="tab-btn" onclick="switchTab('doc')">📄 Impressions documents <span id="docBadge" style="background:#a78bfa;color:#080806;border-radius:4px;padding:1px 7px;font-size:10px;margin-left:4px;font-weight:700;">0</span></button>
+    <button class="tab-btn" onclick="switchTab('stats')">📊 Statistiques</button>
+  </div>
+
+  <!-- TAB: PHOTO -->
+  <div class="tab-content active" id="tab_photo">
+    <div class="main">
+      <!-- Manual notify -->
+      <div class="manual-card">
+        <h3>⚡ Notification manuelle</h3>
+        <input type="text" id="manualOrderNum" placeholder="Numéro de commande *obligatoire">
+        <input type="email" id="manualEmail" placeholder="Courriel du client *obligatoire">
+        <input type="text" id="manualName" placeholder="Nom du client (optionnel)">
+        <select id="manualLang">
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+        <button class="btn-warn" onclick="manualNotify('photo')">📧 Envoyer notification de cueillette</button>
+        <div class="notif-result hidden" id="manualResult"></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <select id="filterStatus" onchange="renderOrders()">
+          <option value="all">Toutes</option>
+          <option value="pending">⏳ Nouveau</option>
+          <option value="awaiting_payment">💳 Paiement en attente</option>
+          <option value="payment_received">✅ Paiement reçu</option>
+          <option value="ready">🎁 Prête</option>
+          <option value="notified">📬 Notifié</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Rechercher nom / n° commande..." oninput="renderOrders()" style="min-width:200px;">
+        <button class="btn-danger" onclick="clearNotified('photo')">🗑 Supprimer les notifiés</button>
+      </div>
+      <div id="orderList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: DOCUMENTS -->
+  <div class="tab-content" id="tab_doc">
+    <div class="main">
+      <!-- Manual notify doc -->
+      <div class="manual-card">
+        <h3>⚡ Notification manuelle — Documents</h3>
+        <input type="text" id="manualDocOrderNum" placeholder="Numéro de commande (ex: ACCD-...) *obligatoire">
+        <input type="email" id="manualDocEmail" placeholder="Courriel du client *obligatoire">
+        <input type="text" id="manualDocName" placeholder="Nom du client (optionnel)">
+        <select id="manualDocLang">
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+        <button class="btn-warn" onclick="manualNotify('doc')">📧 Envoyer notification de cueillette</button>
+        <div class="notif-result hidden" id="manualDocResult"></div>
+      </div>
+
+      <!-- Filters doc -->
+      <div class="filters">
+        <select id="filterDocStatus" onchange="renderDocOrders()">
+          <option value="all">Toutes</option>
+          <option value="pending">⏳ Nouveau</option>
+          <option value="awaiting_payment">💳 Paiement en attente</option>
+          <option value="payment_received">✅ Paiement reçu</option>
+          <option value="ready">🎁 Prête</option>
+          <option value="notified">📬 Notifié</option>
+        </select>
+        <input type="text" id="filterDocSearch" placeholder="Rechercher nom / n° commande..." oninput="renderDocOrders()" style="min-width:200px;">
+        <button class="btn-danger" onclick="clearNotified('doc')">🗑 Supprimer les notifiés</button>
+      </div>
+      <div id="docOrderList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: STATISTICS -->
+  <div class="tab-content" id="tab_stats">
+    <div class="main">
+      <div class="manual-card">
+        <h3 id="t_backupTitle">💾 Sauvegarde complète des données</h3>
+        <div class="small-note" id="t_backupHint" style="margin-bottom:12px;color:#aaa;">
+          Exportez toutes les commandes (avec statuts) en cas de changement d'ordinateur ou de réinstallation du système.
+        </div>
+        <button class="btn-success" id="t_btnExport" onclick="exportFullBackup()">⬇️ Exporter toutes les données</button>
+        <button class="btn-primary" id="t_btnImport" onclick="document.getElementById('importBackupFile').click()">⬆️ Importer une sauvegarde</button>
+        <input type="file" id="importBackupFile" accept=".json" class="hidden" onchange="importFullBackup(event)">
+        <div id="backupResult" class="notif-result hidden"></div>
+      </div>
+
+      <div class="manual-card">
+        <h3 id="t_revenueTitle">📊 Rapport de revenus (commandes payées)</h3>
+        <div class="row" style="display:flex;gap:10px;margin-bottom:10px;">
+          <div style="flex:1;">
+            <label id="t_dateFrom" style="font-size:12px;color:#aaa;display:block;margin-bottom:4px;">Date de début</label>
+            <input type="date" id="statsFrom" style="width:100%;padding:10px;border:1px solid #333;border-radius:8px;background:#0f3460;color:white;font-size:14px;">
+          </div>
+          <div style="flex:1;">
+            <label id="t_dateTo" style="font-size:12px;color:#aaa;display:block;margin-bottom:4px;">Date de fin</label>
+            <input type="date" id="statsTo" style="width:100%;padding:10px;border:1px solid #333;border-radius:8px;background:#0f3460;color:white;font-size:14px;">
+          </div>
+        </div>
+        <button class="btn-primary" id="t_btnRapportImage" onclick="generateStats('image')">📸 Rapport Image</button>
+        <button class="btn-primary" style="background:#9b59b6;" id="t_btnRapportDoc" onclick="generateStats('document')">📄 Rapport Documents</button>
+      </div>
+
+      <div id="statsResultBox" class="hidden">
+        <div class="manual-card">
+          <h3 id="statsResultTitle">Résultat</h3>
+          <div style="overflow-x:auto;">
+            <table id="statsTable" style="width:100%;border-collapse:collapse;font-size:13px;color:#eee;">
+              <thead>
+                <tr id="statsTableHead" style="border-bottom:2px solid #333;text-align:left;"></tr>
+              </thead>
+              <tbody id="statsTableBody"></tbody>
+            </table>
+          </div>
+          <div id="statsActions" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn-success" id="t_btnDownloadCSV" onclick="downloadStatsCSV()">💾 Télécharger CSV (Excel)</button>
+            <button class="btn-primary" id="t_btnEmailReport" onclick="emailStatsReport()">📊 Envoyer le rapport par courriel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /admin-wrap -->
+
+<!-- Password / Security Settings modal -->
+<div id="pwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+  <div class="pwd-modal-inner" style="background:#0e0d08;border-radius:12px;padding:24px;width:380px;max-width:95vw;border:1px solid #1e1a08;box-shadow:0 8px 32px rgba(0,0,0,0.8);margin:0 auto;">
+
+    <h3 style="margin:0 0 16px;color:#D4AF37;font-size:15px;font-weight:700;letter-spacing:0.5px;">⚙️ <span id="t_pwdTitle">Paramètres de sécurité</span></h3>
+
+    <!-- Section 1: Change login password -->
+    <div style="border:0.5px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:10px;letter-spacing:0.5px;" id="t_secTitle1">🔑 Modifier le mot de passe de connexion</div>
+      <div class="pwd-wrap"><input type="password" id="pwdCurrent" placeholder="Mot de passe actuel"><button type="button" class="pwd-eye" onclick="togglePwdVis('pwdCurrent',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <div class="pwd-wrap"><input type="password" id="pwdNew" placeholder="Nouveau mot de passe"><button type="button" class="pwd-eye" onclick="togglePwdVis('pwdNew',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <div class="pwd-wrap"><input type="password" id="pwdConfirm" placeholder="Confirmer le nouveau mot de passe"><button type="button" class="pwd-eye" onclick="togglePwdVis('pwdConfirm',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <button onclick="doChangePwd()" style="width:100%;padding:8px;background:#D4AF37;color:#080806;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:4px;">Enregistrer</button>
+    </div>
+
+    <!-- Section 2: Master password -->
+    <div style="border:0.5px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px;letter-spacing:0.5px;" id="t_secTitle2">🔐 Mot de passe principal (récupération)</div>
+      <div style="font-size:11px;color:var(--gold-dim);margin-bottom:10px;" id="t_secHint2">Un mot de passe distinct, réservé à la réinitialisation si vous oubliez votre mot de passe de connexion.</div>
+      <div class="pwd-wrap"><input type="password" id="masterPwdNew" placeholder="Mot de passe principal"><button type="button" class="pwd-eye" onclick="togglePwdVis('masterPwdNew',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <div class="pwd-wrap"><input type="password" id="masterPwdConfirm" placeholder="Confirmer"><button type="button" class="pwd-eye" onclick="togglePwdVis('masterPwdConfirm',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button></div>
+      <button onclick="saveMasterPwd()" style="width:100%;padding:8px;background:#2a5a2a;color:#4ade80;border:0.5px solid #4ade80;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:4px;" id="t_btnSaveMaster">Enregistrer le mot de passe principal</button>
+      <div id="masterPwdMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+    </div>
+
+    <!-- Section 3: Security questions -->
+    <div style="border:0.5px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px;letter-spacing:0.5px;" id="t_secTitle3">❓ Questions de sécurité</div>
+      <div style="font-size:11px;color:var(--gold-dim);margin-bottom:10px;" id="t_secHint3">Définissez 3 questions et réponses. Les réponses ne sont pas sensibles à la casse.</div>
+      <div id="qaSetupFields"></div>
+      <button onclick="saveSecurityQA()" style="width:100%;padding:8px;background:#1a1a4a;color:#a78bfa;border:0.5px solid #a78bfa;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;margin-top:4px;" id="t_btnSaveQA">Enregistrer les questions</button>
+      <div id="qaPwdMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+    </div>
+
+    <!-- Recovery code -->
+    <div style="border:0.5px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:6px;letter-spacing:0.5px;" id="t_secTitle4">🔑 Code de récupération</div>
+      <div style="font-size:11px;color:var(--gold-dim);margin-bottom:8px;" id="t_secHint4">Gardez ce code dans un endroit sûr.</div>
+      <div id="recoveryCodeDisplay" style="font-family:monospace;letter-spacing:2px;color:var(--gold);font-size:14px;background:var(--bg);padding:8px 12px;border-radius:6px;border:0.5px solid var(--border);margin-bottom:6px;"></div>
+      <button onclick="regenRecoveryCode()" style="width:100%;padding:6px;background:transparent;color:var(--gold-dim);border:0.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;" id="t_btnRegenCode">🔄 Régénérer le code</button>
+    </div>
+
+    <div id="pwdMsg" style="font-size:13px;margin-bottom:10px;min-height:16px;"></div>
+    <button onclick="closePwdModal()" style="width:100%;padding:10px;background:transparent;color:#6a5a18;border:1px solid #1e1a08;border-radius:6px;cursor:pointer;font-size:14px;" id="t_btnClosePwd">Fermer</button>
+  </div>
+</div>
+
+<script>
+const EJ_PUB='SBMK7tfjBexkhDaTR',EJ_SVC='service_8xombom',EJ_TPL='template_byqjw25';
+function initEJ(){
+  try{
+    if(typeof emailjs!=='undefined'){
+      emailjs.init(EJ_PUB);
+      return true;
+    }
+  }catch(e){console.error('EmailJS init error:',e);}
+  return false;
+}
+if(!initEJ()) setTimeout(initEJ,1000);
+
+// ── PASSWORD ──────────────────────────────────────────────────
+const DEFAULT_PWD='AccoPhoto2026';
+function getRecoveryCode(){
+  try{let c=localStorage.getItem('acco_recovery_code');
+    if(!c){c=Math.random().toString(36).slice(2,8).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();localStorage.setItem('acco_recovery_code',c);}
+    return c;}catch{return 'ACCO-RESET';}
+}
+function getAdminPwd(){try{return localStorage.getItem('acco_admin_pwd')||DEFAULT_PWD;}catch{return DEFAULT_PWD;}}
+function setAdminPwd(p){try{localStorage.setItem('acco_admin_pwd',p);}catch{}}
+function getMasterPwd(){try{return localStorage.getItem('acco_master_pwd')||'';}catch{return '';}}
+function getSecurityQA(){try{return JSON.parse(localStorage.getItem('acco_security_qa')||'[]');}catch{return [];}}
+function saveSecurityQAData(qa){try{localStorage.setItem('acco_security_qa',JSON.stringify(qa));}catch{}}
+
+// ── RESET METHOD TABS ─────────────────────────────────────────
+let currentResetMethod='code';
+function switchResetMethod(m){
+  currentResetMethod=m;
+  ['code','master','qa'].forEach(k=>{
+    document.getElementById('rm_'+k).classList.toggle('hidden',k!==m);
+    const tab=document.getElementById('rmTab_'+k);
+    tab.style.background=k===m?'var(--gold)':'var(--surface)';
+    tab.style.color=k===m?'#080806':'var(--gold-dim)';
+  });
+}
+
+function showResetPwd(){
+  document.getElementById('loginWrap').classList.add('hidden');
+  document.getElementById('resetWrap').classList.remove('hidden');
+  document.getElementById('resetCodeInput').value='';
+  document.getElementById('resetMasterInput').value='';
+  document.getElementById('resetNewPwd1').value='';
+  document.getElementById('resetNewPwd2').value='';
+  document.getElementById('resetErr').classList.add('hidden');
+  buildQAResetFields();
+  switchResetMethod('code');
+}
+
+function buildQAResetFields(){
+  const qa=getSecurityQA();
+  const t=ADMIN_T[adminLang]||ADMIN_T.fr;
+  const wrap=document.getElementById('qaResetFields');
+  if(!qa.length){
+    wrap.innerHTML=`<div style="font-size:12px;color:#cc1f3a;">${t.qaNotConfigured||'Aucune question de sécurité configurée.'}</div>`;
+    return;
+  }
+  wrap.innerHTML=qa.map((q,i)=>`
+    <div style="margin-bottom:10px;">
+      <div style="font-size:12px;color:var(--gold-dim);margin-bottom:4px;">${q.question}</div>
+      <input type="text" id="qaAns_${i}" placeholder="..." style="margin-bottom:0;">
+    </div>`).join('');
+}
+
+function showLogin(){
+  document.getElementById('resetWrap').classList.add('hidden');
+  document.getElementById('loginWrap').classList.remove('hidden');
+}
+
+function doResetPwd(){
+  const t=ADMIN_T[adminLang]||ADMIN_T.fr;
+  const p1=document.getElementById('resetNewPwd1').value;
+  const p2=document.getElementById('resetNewPwd2').value;
+  const errEl=document.getElementById('resetErr');
+  errEl.classList.add('hidden');
+
+  if(!p1||p1.length<4){errEl.textContent=t.resetErrShort;errEl.classList.remove('hidden');return;}
+  if(p1!==p2){errEl.textContent=t.resetErrMatch;errEl.classList.remove('hidden');return;}
+
+  let verified=false;
+  if(currentResetMethod==='code'){
+    const code=document.getElementById('resetCodeInput').value.trim().toUpperCase();
+    if(code!==getRecoveryCode()){errEl.textContent=t.resetErrCode;errEl.classList.remove('hidden');return;}
+    verified=true;
+    localStorage.removeItem('acco_recovery_code');getRecoveryCode();
+  } else if(currentResetMethod==='master'){
+    const mp=document.getElementById('resetMasterInput').value;
+    const stored=getMasterPwd();
+    if(!stored){errEl.textContent=t.resetErrMasterNone;errEl.classList.remove('hidden');return;}
+    if(mp!==stored){errEl.textContent=t.resetErrMaster;errEl.classList.remove('hidden');return;}
+    verified=true;
+  } else if(currentResetMethod==='qa'){
+    const qa=getSecurityQA();
+    if(!qa.length){errEl.textContent=t.qaNotConfigured;errEl.classList.remove('hidden');return;}
+    const allOk=qa.every((q,i)=>{
+      const ans=(document.getElementById('qaAns_'+i)?.value||'').trim().toLowerCase();
+      return ans===q.answer.toLowerCase();
+    });
+    if(!allOk){errEl.textContent=t.resetErrQA;errEl.classList.remove('hidden');return;}
+    verified=true;
+  }
+
+  if(verified){
+    setAdminPwd(p1);
+    alert(t.resetOk||'✅ Mot de passe réinitialisé avec succès.');
+    showLogin();
+  }
+}
+
+// ── SETTINGS MODAL ────────────────────────────────────────────
+function openChangePwd(){
+  buildQASetupFields();
+  // Show recovery code in settings
+  const codeEl=document.getElementById('recoveryCodeDisplay');
+  if(codeEl) codeEl.textContent=getRecoveryCode();
+  ['pwdCurrent','pwdNew','pwdConfirm','masterPwdNew','masterPwdConfirm'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.value='';el.type='password';}
+  });
+  // Reset all eye buttons
+  document.querySelectorAll('.pwd-eye').forEach(b=>{b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';});
+  document.getElementById('pwdMsg').textContent='';
+  document.getElementById('masterPwdMsg').textContent='';
+  document.getElementById('qaPwdMsg').textContent='';
+  document.getElementById('pwdModal').style.display='flex';
+}
+function closePwdModal(){document.getElementById('pwdModal').style.display='none';}
+
+function buildQASetupFields(){
+  const existing=getSecurityQA();
+  const defaults=[
+    'Nom de jeune fille de votre mère ?',
+    'Nom de votre premier animal ?',
+    'Ville de naissance de votre père ?',
+  ];
+  const wrap=document.getElementById('qaSetupFields');
+  wrap.innerHTML=[0,1,2].map(i=>`
+    <div style="margin-bottom:10px;">
+      <input type="text" id="qaQ_${i}" placeholder="Question ${i+1}" value="${existing[i]?.question||''}" style="margin-bottom:4px;">
+      <input type="text" id="qaA_${i}" placeholder="${(ADMIN_T[adminLang]||ADMIN_T.fr).qaAnswerPlaceholder||'Réponse'}" value="${existing[i]?.answer||''}">
+    </div>`).join('');
+}
+
+function saveMasterPwd(){
+  const p1=document.getElementById('masterPwdNew').value;
+  const p2=document.getElementById('masterPwdConfirm').value;
+  const msg=document.getElementById('masterPwdMsg');
+  const t2=ADMIN_T[adminLang]||ADMIN_T.fr;
+  if(!p1||p1.length<4){msg.style.color='#cc1f3a';msg.textContent=t2.resetErrShort||'Minimum 4 caractères.';return;}
+  if(p1!==p2){msg.style.color='#cc1f3a';msg.textContent=t2.resetErrMatch||'Les mots de passe ne correspondent pas.';return;}
+  try{localStorage.setItem('acco_master_pwd',p1);}catch{}
+  msg.style.color='#4ade80';msg.textContent=t2.masterSaveOk||'✅ Mot de passe principal enregistré.';
+  document.getElementById('masterPwdNew').value='';
+  document.getElementById('masterPwdConfirm').value='';
+}
+
+function saveSecurityQA(){
+  const qa=[];
+  const msg=document.getElementById('qaPwdMsg');
+  for(let i=0;i<3;i++){
+    const q=(document.getElementById('qaQ_'+i)?.value||'').trim();
+    const a=(document.getElementById('qaA_'+i)?.value||'').trim();
+    const t3=ADMIN_T[adminLang]||ADMIN_T.fr;
+  if(!q||!a){msg.style.color='#cc1f3a';msg.textContent=t3.qaFillAll||'Veuillez remplir les 3 questions et réponses.';return;}
+    qa.push({question:q,answer:a});
+  }
+  saveSecurityQAData(qa);
+  msg.style.color='#4ade80';msg.textContent=(ADMIN_T[adminLang]||ADMIN_T.fr).qaSaveOk||'✅ Questions enregistrées.';
+}
+
+function regenRecoveryCode(){
+  if(!confirm((ADMIN_T[adminLang]||ADMIN_T.fr).regenConfirm||'Régénérer le code ?')) return;
+  localStorage.removeItem('acco_recovery_code');
+  const newCode=getRecoveryCode();
+  document.getElementById('recoveryCodeDisplay').textContent=newCode;
+}
+
+// ── ADMIN TRANSLATIONS ────────────────────────────────────────
+let adminLang='fr';
+const ADMIN_T={
+  fr:{
+    title:'📋 ACCO Photo — Gestion des commandes',
+    tabPhoto:'📸 Impressions photo',tabDoc:'📄 Impressions documents',
+    tabStats:'📊 Statistiques',
+    backupTitle:'💾 Sauvegarde complète des données',
+    revenueTitle:'📊 Rapport de revenus (commandes payées)',
+    dateFrom:'Date de début',dateTo:'Date de fin',
+    btnRapportImage:'📸 Rapport Image',btnRapportDoc:'📄 Rapport Documents',
+    btnDownloadCSV:'💾 Télécharger CSV (Excel)',btnEmailReport:'📊 Envoyer le rapport par courriel',
+    btnExport:'⬇️ Exporter toutes les données',btnImport:'⬆️ Importer une sauvegarde',
+    csvDownloaded:'Fichier CSV téléchargé dans votre dossier Téléchargements',
+    noStatsData:'Aucune commande payée trouvée dans cette période.',
+    backupHint:'Exportez toutes les commandes (avec statuts) en cas de changement d\'ordinateur ou de réinstallation du système.',
+    dateRequired:'Veuillez sélectionner une date de début et une date de fin.',
+    payMethodTitle:'RÉPARTITION PAR MODE DE PAIEMENT',
+    rapportImageTitle:'📸 Rapport Image',rapportDocTitle:'📄 Rapport Documents',
+    commandesPaid:(n)=>`${n} commande(s) payée(s)`,
+    manualTitle:'⚡ Notification manuelle',
+    manualNum:'Numéro de commande *obligatoire',
+    manualEmail:'Courriel du client *obligatoire',
+    manualName:'Nom du client (optionnel)',
+    manualBtn:'📧 Envoyer notification de cueillette',
+    filterAll:'Toutes',filterNew:'⏳ Nouveau',filterAwaiting:'💳 Paiement en attente',
+    filterPaid:'✅ Paiement reçu',filterReady:'🎁 Prête',filterNotified:'📬 Notifié',
+    search:'Rechercher nom / n° commande...',
+    clearBtn:'🗑 Supprimer les notifiés',
+    btnAwaiting:'💳 Rappel paiement',btnPaid:'✅ Confirmer paiement reçu',
+    btnReady:'🎁 Marquer prête',btnNotify:'📧 Notifier client (prête)',btnResend:'🔄 Renvoyer',btnInStore:'Paiement comptoir',
+    pwdTitle:'🔑 Modifier le mot de passe',
+    pwdCurrent:'Mot de passe actuel',pwdNew:'Nouveau mot de passe',pwdConfirm:'Confirmer le nouveau mot de passe',
+    secTitle1:'🔑 Modifier le mot de passe de connexion',
+    secTitle2:'🔐 Mot de passe principal (récupération)',
+    secHint2:'Un mot de passe distinct, réservé à la réinitialisation si vous oubliez votre mot de passe de connexion.',
+    secTitle3:'❓ Questions de sécurité',
+    secHint3:'Définissez 3 questions et réponses. Les réponses ne sont pas sensibles à la casse.',
+    secTitle4:'🔑 Code de récupération',
+    secHint4:'Gardez ce code dans un endroit sûr.',
+    btnSaveMaster:'Enregistrer le mot de passe principal',
+    btnSaveQA:'Enregistrer les questions',
+    btnRegenCode:'🔄 Régénérer le code',
+    btnClosePwd:'Fermer',
+    masterPlaceholder:'Mot de passe principal',
+    masterConfirmPlaceholder:'Confirmer',
+    pwdSaveOk:'✅ Mot de passe modifié !',
+    masterSaveOk:'✅ Mot de passe principal enregistré.',
+    qaSaveOk:'✅ Questions de sécurité enregistrées.',
+    regenConfirm:'Régénérer le code ? L\'ancien code ne fonctionnera plus.',
+    qaFillAll:'Veuillez remplir les 3 questions et réponses.',
+    qaPlaceholder:(i)=>`Question ${i+1}`,
+    qaAnswerPlaceholder:'Réponse (non sensible à la casse)',
+    pwdCancel:'Annuler',pwdSave:'Enregistrer',
+    pwdWrong:'Mot de passe actuel incorrect.',pwdShort:'Au moins 6 caractères requis.',
+    pwdMismatch:'Les mots de passe ne correspondent pas.',pwdOk:'✅ Mot de passe modifié !',
+    sentOk:'✅ Notification envoyée !',sentFail:'⚠️ Envoi auto échoué — client de messagerie ouvert.',
+    awaitingSentOk:'✅ Rappel paiement envoyé !',paidSentOk:'✅ Confirmation paiement envoyée !',
+    noOrders:'Aucune commande trouvée.',noDocOrders:'Aucune commande de documents trouvée.',
+    qty:'Qté',download:'Télécharger fichiers',downloadDoc:'Télécharger documents',
+    loginBtn:'Sign In',loginErr:'Mot de passe incorrect.',
+    forgotLink:'Mot de passe oublié ?',
+    resetTitle:'Réinitialiser le mot de passe',
+    resetCodeHint:'Entrez le code de récupération généré automatiquement.',
+    resetMasterHint:'Entrez votre mot de passe principal (configuré dans les paramètres ⚙️).',
+    resetQAHint:'Répondez aux 3 questions de sécurité configurées dans les paramètres ⚙️.',
+    resetBtn:'Réinitialiser',
+    resetBack:'← Retour',
+    rmTabCode:'🔑 Code',
+    rmTabMaster:'🔐 Mot de passe principal',
+    rmTabQA:'❓ Questions',
+    resetPwdNew:'Nouveau mot de passe',
+    resetPwdConfirm:'Confirmer le mot de passe',
+    qaNotConfigured:'Aucune question de sécurité configurée. Allez dans les paramètres ⚙️.',
+    resetErrShort:'Mot de passe trop court (min. 4 caractères).',
+    resetErrMatch:'Les mots de passe ne correspondent pas.',
+    resetErrCode:'Code de récupération incorrect.',
+    resetErrMasterNone:'Aucun mot de passe principal configuré.',
+    resetErrMaster:'Mot de passe principal incorrect.',
+    resetErrQA:'Une ou plusieurs réponses sont incorrectes.',
+    resetOk:'✅ Mot de passe réinitialisé avec succès.',
+    confirmDelete:'Supprimer cette commande ?',confirmClear:'Supprimer toutes les commandes notifiées ?',
+  },
+  en:{
+    title:'📋 ACCO Photo — Order Management',
+    tabPhoto:'📸 Photo Printing',tabDoc:'📄 Document Printing',
+    tabStats:'📊 Statistics',
+    backupTitle:'💾 Full data backup',
+    revenueTitle:'📊 Revenue report (paid orders)',
+    dateFrom:'Start date',dateTo:'End date',
+    btnRapportImage:'📸 Image Report',btnRapportDoc:'📄 Document Report',
+    btnDownloadCSV:'💾 Download CSV (Excel)',btnEmailReport:'📊 Email this report',
+    btnExport:'⬇️ Export all data',btnImport:'⬆️ Import backup',
+    csvDownloaded:'CSV file saved to your Downloads folder',
+    noStatsData:'No paid orders found in this period.',
+    backupHint:'Export all orders (with statuses) in case of computer change or system reinstall.',
+    dateRequired:'Please select a start date and end date.',
+    payMethodTitle:'BREAKDOWN BY PAYMENT METHOD',
+    rapportImageTitle:'📸 Image Report',rapportDocTitle:'📄 Document Report',
+    commandesPaid:(n)=>`${n} paid order(s)`,
+    manualTitle:'⚡ Manual Notification',
+    manualNum:'Order number *required',
+    manualEmail:'Client email *required',
+    manualName:'Client name (optional)',
+    manualBtn:'📧 Send pickup notification',
+    filterAll:'All',filterNew:'⏳ New',filterAwaiting:'💳 Payment pending',
+    filterPaid:'✅ Payment received',filterReady:'🎁 Ready',filterNotified:'📬 Notified',
+    search:'Search name / order number...',
+    clearBtn:'🗑 Delete notified orders',
+    btnAwaiting:'💳 Payment reminder',btnPaid:'✅ Confirm payment received',
+    btnReady:'🎁 Mark ready',btnNotify:'📧 Notify client (ready)',btnResend:'🔄 Resend',btnInStore:'In-store payment',
+    pwdTitle:'🔑 Change password',
+    pwdCurrent:'Current password',pwdNew:'New password',pwdConfirm:'Confirm new password',
+    secTitle1:'🔑 Change login password',
+    secTitle2:'🔐 Master password (recovery)',
+    secHint2:'A separate password used only to reset your login password if you forget it.',
+    secTitle3:'❓ Security questions',
+    secHint3:'Set 3 questions and answers. Answers are not case-sensitive.',
+    secTitle4:'🔑 Recovery code',
+    secHint4:'Keep this code in a safe place.',
+    btnSaveMaster:'Save master password',
+    btnSaveQA:'Save questions',
+    btnRegenCode:'🔄 Regenerate code',
+    btnClosePwd:'Close',
+    masterPlaceholder:'Master password',
+    masterConfirmPlaceholder:'Confirm',
+    pwdSaveOk:'✅ Password changed!',
+    masterSaveOk:'✅ Master password saved.',
+    qaSaveOk:'✅ Security questions saved.',
+    regenConfirm:'Regenerate code? The old code will no longer work.',
+    qaFillAll:'Please fill in all 3 questions and answers.',
+    qaPlaceholder:(i)=>`Question ${i+1}`,
+    qaAnswerPlaceholder:'Answer (not case-sensitive)',
+    pwdCancel:'Cancel',pwdSave:'Save',
+    pwdWrong:'Incorrect current password.',pwdShort:'At least 6 characters required.',
+    pwdMismatch:'Passwords do not match.',pwdOk:'✅ Password changed!',
+    sentOk:'✅ Notification sent!',sentFail:'⚠️ Auto send failed — mail client opened.',
+    awaitingSentOk:'✅ Payment reminder sent!',paidSentOk:'✅ Payment confirmation sent!',
+    noOrders:'No orders found.',noDocOrders:'No document orders found.',
+    qty:'Qty',download:'Download files',downloadDoc:'Download documents',
+    loginBtn:'Sign In',loginErr:'Incorrect password.',
+    forgotLink:'Forgot password?',
+    resetTitle:'Reset password',
+    resetCodeHint:'Enter the recovery code generated automatically.',
+    resetMasterHint:'Enter your master password (set in settings ⚙️).',
+    resetQAHint:'Answer the 3 security questions set in settings ⚙️.',
+    resetBtn:'Reset password',
+    resetBack:'← Back',
+    rmTabCode:'🔑 Code',
+    rmTabMaster:'🔐 Master password',
+    rmTabQA:'❓ Questions',
+    resetPwdNew:'New password',
+    resetPwdConfirm:'Confirm password',
+    qaNotConfigured:'No security questions configured. Go to settings ⚙️.',
+    resetErrShort:'Password too short (min. 4 characters).',
+    resetErrMatch:'Passwords do not match.',
+    resetErrCode:'Incorrect recovery code.',
+    resetErrMasterNone:'No master password configured.',
+    resetErrMaster:'Incorrect master password.',
+    resetErrQA:'One or more answers are incorrect.',
+    resetOk:'✅ Password reset successfully.',
+    confirmDelete:'Delete this order?',confirmClear:'Delete all notified orders?',
+  },
+  zh:{
+    title:'📋 ACCO Photo — 订单管理',
+    tabPhoto:'📸 图片打印',tabDoc:'📄 文档打印',
+    tabStats:'📊 统计',
+    backupTitle:'💾 完整数据备份',
+    revenueTitle:'📊 收入报表（已收款订单）',
+    dateFrom:'开始日期',dateTo:'结束日期',
+    btnRapportImage:'📸 图片报表',btnRapportDoc:'📄 文档报表',
+    btnDownloadCSV:'💾 下载 CSV (Excel)',btnEmailReport:'📊 发送报表到邮箱',
+    btnExport:'⬇️ 导出所有数据',btnImport:'⬆️ 导入备份',
+    csvDownloaded:'CSV 文件已保存到您的下载文件夹',
+    noStatsData:'该时间段内没有已收款订单。',
+    backupHint:'导出所有订单（含状态），以备换电脑或重装系统时恢复数据。',
+    dateRequired:'请选择开始日期和结束日期。',
+    payMethodTitle:'按付款方式分类',
+    rapportImageTitle:'📸 图片报表',rapportDocTitle:'📄 文档报表',
+    commandesPaid:(n)=>`${n} 笔已收款订单`,
+    manualTitle:'⚡ 手动发送通知',
+    manualNum:'订单号 *必填',
+    manualEmail:'客户Email *必填',
+    manualName:'客户姓名（选填）',
+    manualBtn:'📧 发送取件通知',
+    filterAll:'全部',filterNew:'⏳ 新订单',filterAwaiting:'💳 等待付款',
+    filterPaid:'✅ 已收款',filterReady:'🎁 已完成',filterNotified:'📬 已通知',
+    search:'搜索姓名 / 订单号...',
+    clearBtn:'🗑 删除已通知订单',
+    btnAwaiting:'💳 催付款',btnPaid:'✅ 确认已收款',
+    btnReady:'🎁 标记完成',btnNotify:'📧 通知客户取件',btnResend:'🔄 重新发送',btnInStore:'柜台付款',
+    pwdTitle:'🔑 修改密码',
+    pwdCurrent:'当前密码',pwdNew:'新密码',pwdConfirm:'确认新密码',
+    secTitle1:'🔑 修改登录密码',
+    secTitle2:'🔐 主密码（恢复用）',
+    secHint2:'独立密码，专用于忘记登录密码时重置使用。',
+    secTitle3:'❓ 安全问题',
+    secHint3:'设置3个问题和答案，答案不区分大小写。',
+    secTitle4:'🔑 恢复码',
+    secHint4:'请把此码保存在安全的地方。',
+    btnSaveMaster:'保存主密码',
+    btnSaveQA:'保存安全问题',
+    btnRegenCode:'🔄 重新生成恢复码',
+    btnClosePwd:'关闭',
+    masterPlaceholder:'主密码',
+    masterConfirmPlaceholder:'确认主密码',
+    pwdSaveOk:'✅ 密码修改成功！',
+    masterSaveOk:'✅ 主密码已保存。',
+    qaSaveOk:'✅ 安全问题已保存。',
+    regenConfirm:'重新生成恢复码？旧的恢复码将失效。',
+    qaFillAll:'请填写所有3个问题和答案。',
+    qaPlaceholder:(i)=>`问题 ${i+1}`,
+    qaAnswerPlaceholder:'答案（不区分大小写）',
+    pwdCancel:'取消',pwdSave:'保存',
+    pwdWrong:'当前密码不正确。',pwdShort:'密码至少6位。',
+    pwdMismatch:'两次密码不一致。',pwdOk:'✅ 密码已修改！',
+    sentOk:'✅ 通知已发送！',sentFail:'⚠️ 自动发送失败，已打开邮件客户端。',
+    awaitingSentOk:'✅ 催款邮件已发送！',paidSentOk:'✅ 确认收款邮件已发送！',
+    noOrders:'没有找到订单。',noDocOrders:'没有找到文档打印订单。',
+    qty:'数量',download:'下载文件',downloadDoc:'下载文档',
+    loginBtn:'Sign In',loginErr:'密码不正确。',
+    forgotLink:'忘记密码？',
+    resetTitle:'重置密码',
+    resetCodeHint:'请输入系统自动生成的恢复码。',
+    resetMasterHint:'请输入您在设置 ⚙️ 中设定的主密码。',
+    resetQAHint:'请回答您在设置 ⚙️ 中设定的3个安全问题。',
+    resetBtn:'重置密码',
+    resetBack:'← 返回',
+    rmTabCode:'🔑 恢复码',
+    rmTabMaster:'🔐 主密码',
+    rmTabQA:'❓ 安全问题',
+    resetPwdNew:'新密码',
+    resetPwdConfirm:'确认新密码',
+    qaNotConfigured:'未设置安全问题，请前往设置 ⚙️ 配置。',
+    resetErrShort:'密码太短（最少4位）。',
+    resetErrMatch:'两次输入的密码不一致。',
+    resetErrCode:'恢复码不正确。',
+    resetErrMasterNone:'未设置主密码。',
+    resetErrMaster:'主密码不正确。',
+    resetErrQA:'一个或多个问题回答有误。',
+    resetOk:'✅ 密码重置成功。',
+    confirmDelete:'确定删除这条订单吗？',confirmClear:'确定删除所有已通知的订单吗？',
+  },
+};
+
+function applyAdminLang(l){
+  adminLang=l;
+  const t=ADMIN_T[l];
+  const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const ph=(id,v)=>{const e=document.getElementById(id);if(e)e.placeholder=v;};
+
+  $('loginBtn',t.loginBtn||'Sign In');
+  $('loginErr',t.loginErr||'');
+  // Forgot password page
+  $('forgotPwdLink',t.forgotLink||'Mot de passe oublié ?');
+  $('t_resetTitle',t.resetTitle||'');
+  $('t_resetCodeHint',t.resetCodeHint||'');
+  $('t_resetMasterHint',t.resetMasterHint||'');
+  $('t_resetQAHint',t.resetQAHint||'');
+  $('t_resetBtn',t.resetBtn||'');
+  // Reset method tabs
+  const rmCode=document.getElementById('rmTab_code');
+  const rmMaster=document.getElementById('rmTab_master');
+  const rmQA=document.getElementById('rmTab_qa');
+  if(rmCode)rmCode.textContent=t.rmTabCode||'🔑 Code';
+  if(rmMaster)rmMaster.textContent=t.rmTabMaster||'🔐 Mot de passe principal';
+  if(rmQA)rmQA.textContent=t.rmTabQA||'❓ Questions';
+  // Placeholders
+  ph('resetCodeInput',t.resetCodeHint?.split('.')[0]||'Code de récupération');
+  ph('resetMasterInput',t.rmTabMaster||'Mot de passe principal');
+  ph('resetNewPwd1',t.resetPwdNew||'Nouveau mot de passe');
+  ph('resetNewPwd2',t.resetPwdConfirm||'Confirmer le mot de passe');
+
+
+
+  // Tabs
+  const tabs=document.querySelectorAll('.tab-btn');
+  if(tabs[0])tabs[0].innerHTML=t.tabPhoto+` <span id="photoBadge" style="background:#D4AF37;color:#080806;border-radius:4px;padding:1px 7px;font-size:10px;margin-left:4px;font-weight:700;">${document.getElementById('photoBadge')?.textContent||'0'}</span>`;
+  if(tabs[1])tabs[1].innerHTML=t.tabDoc+` <span id="docBadge" style="background:#a78bfa;color:#080806;border-radius:4px;padding:1px 7px;font-size:10px;margin-left:4px;font-weight:700;">${document.getElementById('docBadge')?.textContent||'0'}</span>`;
+  if(tabs[2])tabs[2].textContent=t.tabStats||'📊 Statistiques';
+
+  // Stats page labels
+  $('t_backupTitle',t.backupTitle||'');
+  $('t_backupHint',t.backupHint||'');
+  $('t_revenueTitle',t.revenueTitle||'');
+  // Settings modal
+  $('t_pwdTitle',t.pwdTitle||'Paramètres de sécurité');
+  $('t_secTitle1',t.secTitle1||'');$('t_secTitle2',t.secTitle2||'');
+  $('t_secHint2',t.secHint2||'');$('t_secTitle3',t.secTitle3||'');
+  $('t_secHint3',t.secHint3||'');$('t_secTitle4',t.secTitle4||'');
+  $('t_secHint4',t.secHint4||'');
+  $('t_btnSaveMaster',t.btnSaveMaster||'');$('t_btnSaveQA',t.btnSaveQA||'');
+  $('t_btnRegenCode',t.btnRegenCode||'');$('t_btnClosePwd',t.btnClosePwd||'');
+  ph('pwdCurrent',t.pwdCurrent||'');ph('pwdNew',t.pwdNew||'');
+  ph('pwdConfirm',t.pwdConfirm||'');
+  ph('masterPwdNew',t.masterPlaceholder||'');ph('masterPwdConfirm',t.masterConfirmPlaceholder||'');
+  $('t_dateFrom',t.dateFrom||'');
+  $('t_dateTo',t.dateTo||'');
+  $('t_btnRapportImage',t.btnRapportImage||'');
+  $('t_btnRapportDoc',t.btnRapportDoc||'');
+  $('t_btnDownloadCSV',t.btnDownloadCSV||'');
+  $('t_btnEmailReport',t.btnEmailReport||'');
+  $('t_btnExport',t.btnExport||'');
+  $('t_btnImport',t.btnImport||'');
+
+  // Manual notify
+  document.querySelectorAll('.manual-card h3').forEach(h=>h.textContent=t.manualTitle);
+  ph('manualOrderNum',t.manualNum);ph('manualEmail',t.manualEmail);ph('manualName',t.manualName);
+  ph('manualDocOrderNum',t.manualNum);ph('manualDocEmail',t.manualEmail);ph('manualDocName',t.manualName);
+  document.querySelectorAll('.manual-card .btn-warn').forEach(b=>b.textContent=t.manualBtn);
+
+  // Filter dropdowns — photo
+  const fs=document.getElementById('filterStatus');
+  if(fs) fs.innerHTML=`
+    <option value="all">${t.filterAll}</option>
+    <option value="pending">${t.filterNew}</option>
+    <option value="awaiting_payment">${t.filterAwaiting}</option>
+    <option value="payment_received">${t.filterPaid}</option>
+    <option value="ready">${t.filterReady}</option>
+    <option value="notified">${t.filterNotified}</option>`;
+
+  // Filter dropdowns — doc
+  const fd=document.getElementById('filterDocStatus');
+  if(fd) fd.innerHTML=`
+    <option value="all">${t.filterAll}</option>
+    <option value="pending">${t.filterNew}</option>
+    <option value="awaiting_payment">${t.filterAwaiting}</option>
+    <option value="payment_received">${t.filterPaid}</option>
+    <option value="ready">${t.filterReady}</option>
+    <option value="notified">${t.filterNotified}</option>`;
+
+  // Search placeholders
+  ph('filterSearch',t.search);
+  ph('filterDocSearch',t.search);
+
+  // Clear buttons
+  document.querySelectorAll('.btn-danger[onclick*="clearNotified"]').forEach(b=>b.textContent=t.clearBtn);
+
+  // Password modal
+  ph('pwdCurrent',t.pwdCurrent);ph('pwdNew',t.pwdNew);ph('pwdConfirm',t.pwdConfirm);
+
+  // Re-render to update order card button labels
+  renderOrders();renderDocOrders();
+}
+
+
+function togglePwdVis(inputId,btn){
+  const el=document.getElementById(inputId);
+  if(!el)return;
+  const show=el.type==='password';
+  el.type=show?'text':'password';
+  btn.innerHTML=show?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+}
+
+function doLogin(){
+  const pwd=document.getElementById('pwdInput').value;
+  if(pwd===getAdminPwd()){
+    sessionStorage.setItem('acco_admin_ok','1');
+    showAdmin();
+  } else {
+    document.getElementById('loginErr').classList.remove('hidden');
+  }
+}
+
+function showAdmin(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('adminWrap').style.display='block';
+  renderOrders();renderDocOrders();updateStats();
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['photo','doc','stats'][i]===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab_'+tab).classList.add('active');
+  if(tab==='photo') renderOrders();
+  if(tab==='doc') renderDocOrders();
+}
+
+// ── NOTIFY TEXTS ──────────────────────────────────────────────
+// Type: 'ready' | 'awaiting_payment' | 'payment_received'
+const NOTIFY_TEXT={
+  fr:{
+    subject:(n)=>`Votre commande est prête — ${n}`,
+    body:(name,n)=>`Bonjour ${name},\n\nVotre commande ${n} est prête pour la cueillette chez ACCO Photo.\n\nHeures d'ouverture (mises à jour pour les jours fériés) :\nhttps://www.accophoto.com/form-map\n\nQuestions ? info@accophoto.com\n\nMerci !\nACCO Photo`,
+    awaitingSubject:(n)=>`Paiement requis — ${n}`,
+    awaitingBody:(name,n)=>`Bonjour ${name},\n\nNous avons bien reçu votre commande ${n} et vos fichiers.\n\nNous n'avons pas encore reçu votre paiement par virement Interac. Merci de compléter le paiement à info@accophoto.com en indiquant votre numéro de commande ${n} dans le champ note.\n\nNous débuterons la production dès réception de votre paiement.\n\nQuestions ? info@accophoto.com\n\nMerci !\nACCO Photo`,
+    paidSubject:(n)=>`Paiement reçu — ${n}`,
+    paidBody:(name,n)=>`Bonjour ${name},\n\nNous avons bien reçu votre paiement pour la commande ${n}. Nous allons maintenant commencer la production.\n\nVous recevrez un autre courriel dès que votre commande sera prête pour la cueillette.\n\nQuestions ? info@accophoto.com\n\nMerci !\nACCO Photo`,
+  },
+  en:{
+    subject:(n)=>`Your order is ready — ${n}`,
+    body:(name,n)=>`Hi ${name},\n\nYour order ${n} is ready for pickup at ACCO Photo, during our business hours.\n\nCurrent hours (updated for holidays):\nhttps://www.accophoto.com/form-map\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+    awaitingSubject:(n)=>`Payment required — ${n}`,
+    awaitingBody:(name,n)=>`Hi ${name},\n\nWe have received your order ${n} and your files.\n\nWe have not yet received your Interac e-Transfer payment. Please send payment to info@accophoto.com and include your order number ${n} in the note field.\n\nProduction will begin once payment is received.\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+    paidSubject:(n)=>`Payment received — ${n}`,
+    paidBody:(name,n)=>`Hi ${name},\n\nWe have received your payment for order ${n}. We will now begin production.\n\nYou will receive another email as soon as your order is ready for pickup.\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+  },
+  zh:{
+    subject:(n)=>`您的订单已完成 — ${n}`,
+    body:(name,n)=>`您好 ${name}，\n\n您的订单 ${n} 已经完成，请在我们营业时间内前来 ACCO Photo 取件。\n\n最新营业时间（节假日会提前更新）：\nhttps://www.accophoto.com/form-map\n\n问题请联系：info@accophoto.com\n\n感谢您的惠顾！\nACCO Photo`,
+    awaitingSubject:(n)=>`请完成付款 — ${n}`,
+    awaitingBody:(name,n)=>`您好 ${name}，\n\n我们已收到您的订单 ${n} 和文件。\n\n但我们尚未收到您的 Interac 电子转账付款。请尽快将款项转至 info@accophoto.com，并在备注栏填写订单号 ${n}。\n\n收到付款后我们将立即开始制作。\n\n如有问题请联系：info@accophoto.com\n\n感谢！\nACCO Photo`,
+    paidSubject:(n)=>`已收到您的付款 — ${n}`,
+    paidBody:(name,n)=>`您好 ${name}，\n\n我们已收到订单 ${n} 的付款，现在开始制作。\n\n订单完成后我们会再次通知您来取件。\n\n如有问题请联系：info@accophoto.com\n\n感谢！\nACCO Photo`,
+  },
+};
+
+// ── DATA ──────────────────────────────────────────────────────
+function getOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]').filter(o=>o.type!=='document');}catch{return[];}}
+function getDocOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]').filter(o=>o.type==='document');}catch{return[];}}
+function getAllOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]');}catch{return[];}}
+function saveAllOrders(orders){try{localStorage.setItem('acco_orders',JSON.stringify(orders));}catch{}}
+
+function updateStats(){
+  const all=getAllOrders();
+  const photoActive=all.filter(o=>o.type!=='document'&&!['notified'].includes(o.status)).length;
+  const docActive=all.filter(o=>o.type==='document'&&!['notified'].includes(o.status)).length;
+  document.getElementById('photoBadge').textContent=photoActive;
+  document.getElementById('docBadge').textContent=docActive;
+  document.getElementById('statsBar').textContent=`📸 ${photoActive} actif(s)  |  📄 ${docActive} actif(s)`;
+}
+
+function statusBadge(status){
+  const map={
+    pending:'<span class="status-badge badge-pending">⏳ Nouveau</span>',
+    awaiting_payment:'<span class="status-badge badge-awaiting">💳 Paiement en attente</span>',
+    payment_received:'<span class="status-badge badge-paid">✅ Paiement reçu</span>',
+    ready:'<span class="status-badge badge-ready">🎁 Prête</span>',
+    notified:'<span class="status-badge badge-notified">📬 Notifié</span>',
+  };
+  return map[status]||map.pending;
+}
+
+function statusClass(status){
+  const map={pending:'pending',awaiting_payment:'pending',payment_received:'ready',ready:'ready',notified:'notified'};
+  return map[status]||'pending';
+}
+
+function actionButtons(idx,status){
+  const t=ADMIN_T[adminLang]||ADMIN_T.fr;
+  const btns=[];
+  const orders=getAllOrders();
+  const o=orders[idx];
+  const payMethod=o?.payMethod||'';
+
+  // 催款（e-transfer）
+  const awaitingDone=['payment_received','ready','notified'].includes(status);
+  btns.push(`<button class="btn-sm btn-warn" onclick="sendAwaitingPayment(${idx})" ${awaitingDone?'style="opacity:0.45;"':''}>${t.btnAwaiting}</button>`);
+
+  // 确认e-transfer收款
+  const paidDone=['payment_received','ready','notified'].includes(status);
+  btns.push(`<button class="btn-sm btn-primary" onclick="confirmPayment(${idx})" ${paidDone?'style="opacity:0.45;"':''}>${t.btnPaid}</button>`);
+
+  // 柜台付款（现金/Debit/Visa/Master）
+  if(!paidDone){
+    btns.push(`<select onchange="if(this.value)doInStorePay(${idx},this.value);this.value='';"
+      style="background:#0e0d08;color:#4ade80;border:0.5px solid #4ade80;border-radius:5px;padding:4px 8px;font-size:12px;cursor:pointer;margin:2px;">
+      <option value="">🏪 ${t.btnInStore||'Comptoir'}</option>
+      <option value="Comptant">💵 Comptant</option>
+      <option value="Débit">💳 Débit</option>
+      <option value="Visa">💳 Visa</option>
+      <option value="Mastercard">💳 Mastercard</option>
+    </select>`);
+  } else if(payMethod&&payMethod!=='interac'){
+    btns.push(`<span style="font-size:11px;color:#4ade80;padding:3px 8px;border:0.5px solid #2a5a2a;border-radius:4px;">🏪 ${payMethod}</span>`);
+  }
+
+  // 标记完成
+  const readyDone=['ready','notified'].includes(status);
+  btns.push(`<button class="btn-sm btn-success" onclick="markReady(${idx})" ${readyDone?'style="opacity:0.45;"':''}>${t.btnReady}</button>`);
+
+  // 通知取件
+  btns.push(`<button class="btn-sm btn-primary" style="background:#8e44ad;" onclick="sendNotify(${idx})">${status==='notified'?t.btnResend:t.btnNotify}</button>`);
+
+  btns.push(`<button class="btn-sm btn-danger" onclick="deleteOrder(${idx})">🗑</button>`);
+  return btns.join(' ');
+}
+
+// ── AUTO LOGIN CHECK ──────────────────────────────────────────
+if(sessionStorage.getItem('acco_admin_ok')==='1'){
+  showAdmin();
+}
+
+// ── RENDER PHOTO ORDERS ───────────────────────────────────────
+function renderOrders(){
+  const orders=getOrders();
+  const sf=document.getElementById('filterStatus').value;
+  const search=document.getElementById('filterSearch').value.toLowerCase();
+  let filtered=orders;
+  if(sf!=='all') filtered=filtered.filter(o=>o.status===sf);
+  if(search) filtered=filtered.filter(o=>o.name?.toLowerCase().includes(search)||o.orderNum?.toLowerCase().includes(search));
+
+  updateStats();
+  const list=document.getElementById('orderList');
+  if(!filtered.length){
+    list.innerHTML='<div class="empty-state"><div class="icon">📭</div><div>Aucune commande trouvée.</div></div>';
+    return;
+  }
+  list.innerHTML=filtered.map(order=>{
+    const allOrders=getAllOrders();
+    const realIdx=allOrders.findIndex(o=>o.orderNum===order.orderNum);
+    const sc=statusClass(order.status);
+    const badge=statusBadge(order.status);
+    const date=new Date(order.date).toLocaleString('fr-CA',{dateStyle:'medium',timeStyle:'short'});
+    const items=(order.items||[]).map(it=>`<div class="order-item">📄 ${it.fn||it.desc||''} — Qté: ${it.qty||1} — ${it.ss||''} ${it.ml||''}</div>`).join('');
+    const links=(order.links||[]).map((l,j)=>`<div><a href="${l}" target="_blank">📎 Télécharger fichiers (${j+1})</a></div>`).join('');
+    return `<div class="order-card ${sc}" id="pc_${realIdx}">
+      <div class="order-head">
+        <div>
+          <div class="order-num">${order.orderNum}</div>
+          <div class="order-client">${order.name||''}</div>
+          <div class="order-meta">📧 ${order.email||'—'} &nbsp;|&nbsp; 📞 ${order.phone||'—'}</div>
+          <div class="order-date">📅 ${date}</div>
+        </div>${badge}
+      </div>
+      <div class="order-items">${items}</div>
+      ${links?`<div class="order-links">${links}</div>`:''}
+      <div class="order-actions">${actionButtons(realIdx,order.status)}</div>
+      <div class="notif-result hidden" id="nr_${realIdx}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER DOC ORDERS ─────────────────────────────────────────
+function renderDocOrders(){
+  const orders=getDocOrders();
+  const sf=document.getElementById('filterDocStatus').value;
+  const search=document.getElementById('filterDocSearch').value.toLowerCase();
+  let filtered=orders;
+  if(sf!=='all') filtered=filtered.filter(o=>o.status===sf);
+  if(search) filtered=filtered.filter(o=>o.name?.toLowerCase().includes(search)||o.orderNum?.toLowerCase().includes(search));
+
+  updateStats();
+  const list=document.getElementById('docOrderList');
+  if(!filtered.length){
+    list.innerHTML='<div class="empty-state"><div class="icon">📭</div><div>Aucune commande de documents trouvée.</div></div>';
+    return;
+  }
+  list.innerHTML=filtered.map(order=>{
+    const allOrders=getAllOrders();
+    const realIdx=allOrders.findIndex(o=>o.orderNum===order.orderNum);
+    const sc=statusClass(order.status);
+    const badge=statusBadge(order.status);
+    const date=new Date(order.date).toLocaleString('fr-CA',{dateStyle:'medium',timeStyle:'short'});
+    const items=(order.items||[]).map(it=>`
+      <div class="order-item">
+        📄 ${it.desc||''} ${it.lineTotal!==null&&it.lineTotal!==undefined?'— $'+it.lineTotal.toFixed(2):'— Sur devis'}
+        ${it.files?.length?`<br><span style="color:#666;font-size:12px;">Fichiers: ${it.files.join(', ')}</span>`:''}
+        ${it.notes?`<br><span style="color:#888;font-size:12px;">📝 ${it.notes}</span>`:''}
+      </div>`).join('');
+    const links=(order.links||[]).map((l,j)=>`<div><a href="${l}" target="_blank">📎 Télécharger documents (${j+1})</a></div>`).join('');
+    return `<div class="order-card ${sc}" id="dc_${realIdx}">
+      <div class="order-head">
+        <div>
+          <div class="order-num">${order.orderNum} <span class="doc-badge">📄 DOC</span></div>
+          <div class="order-client">${order.name||''}</div>
+          <div class="order-meta">📧 ${order.email||'—'} &nbsp;|&nbsp; 📞 ${order.phone||'—'}</div>
+          <div class="order-date">📅 ${date}</div>
+        </div>${badge}
+      </div>
+      <div class="order-items">${items}</div>
+      ${links?`<div class="order-links">${links}</div>`:''}
+      <div class="order-actions">${actionButtons(realIdx,order.status)}</div>
+      <div class="notif-result hidden" id="nr_${realIdx}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────
+function markReady(i){
+  const orders=getAllOrders();
+  orders[i].status='ready';
+  saveAllOrders(orders);
+  renderOrders();renderDocOrders();updateStats();
+}
+
+async function sendAwaitingPayment(i){
+  const orders=getAllOrders();
+  const o=orders[i];
+  const l=o.lang||'fr';
+  const nt=NOTIFY_TEXT[l]||NOTIFY_TEXT.fr;
+  try{
+    initEJ();
+    await emailjs.send(EJ_SVC,'template_pr5vbfv',{
+      order_number:o.orderNum, client_name:o.name, client_phone:o.phone||'',
+      client_email:o.email, print_size:'', material:'', mode:'', filename:o.orderNum,
+      image_data:'', lang:l, is_ready_notification:'false',
+      ready_subject:nt.awaitingSubject(o.orderNum),
+      ready_body:nt.awaitingBody(o.name,o.orderNum),
+    });
+    orders[i].status='awaiting_payment';
+    saveAllOrders(orders);
+    showNotifResult(i,ADMIN_T[adminLang].awaitingSentOk,'ok');
+    setTimeout(()=>{renderOrders();renderDocOrders();updateStats();},1500);
+  }catch(e){
+    const errMsg=e?.text||e?.status||e?.message||JSON.stringify(e);
+    const sub=encodeURIComponent(nt.awaitingSubject(o.orderNum));
+    const body=encodeURIComponent(nt.awaitingBody(o.name,o.orderNum));
+    showNotifResult(i,`${ADMIN_T[adminLang].sentFail} (${errMsg}) — <a href="mailto:${o.email}?subject=${sub}&body=${body}" target="_blank" style="color:#4a90e2;">Envoyer manuellement</a>`,'err');
+    console.error('EmailJS awaiting error:',e);
+  }
+}
+
+async function confirmPayment(i){
+  const orders=getAllOrders();
+  const o=orders[i];
+  const l=o.lang||'fr';
+  const nt=NOTIFY_TEXT[l]||NOTIFY_TEXT.fr;
+  try{
+    initEJ();
+    await emailjs.send(EJ_SVC,'template_pr5vbfv',{
+      order_number:o.orderNum, client_name:o.name, client_phone:o.phone||'',
+      client_email:o.email, print_size:'', material:'', mode:'', filename:o.orderNum,
+      image_data:'', lang:l, is_ready_notification:'false',
+      ready_subject:nt.paidSubject(o.orderNum),
+      ready_body:nt.paidBody(o.name,o.orderNum),
+    });
+    orders[i].status='payment_received';
+    saveAllOrders(orders);
+    // ── Auto-archive on payment confirmed ──
+    archiveOrder(o);
+    showNotifResult(i,ADMIN_T[adminLang].paidSentOk,'ok');
+    setTimeout(()=>{renderOrders();renderDocOrders();updateStats();},1500);
+  }catch(e){
+    const errMsg=e?.text||e?.status||e?.message||JSON.stringify(e);
+    const sub=encodeURIComponent(nt.paidSubject(o.orderNum));
+    const body=encodeURIComponent(nt.paidBody(o.name,o.orderNum));
+    showNotifResult(i,`${ADMIN_T[adminLang].sentFail} (${errMsg}) — <a href="mailto:${o.email}?subject=${sub}&body=${body}" target="_blank" style="color:#4a90e2;">Envoyer manuellement</a>`,'err');
+    console.error('EmailJS paid error:',e);
+  }
+}
+
+async function sendNotify(i){
+  const orders=getAllOrders();
+  const o=orders[i];
+  const l=o.lang||'fr';
+  const nt=NOTIFY_TEXT[l]||NOTIFY_TEXT.fr;
+  try{
+    initEJ();
+    await emailjs.send(EJ_SVC,'template_pr5vbfv',{
+      order_number:o.orderNum, client_name:o.name, client_phone:o.phone||'',
+      client_email:o.email, print_size:'', material:'', mode:'', filename:o.orderNum,
+      image_data:'', lang:l, is_ready_notification:'false',
+      ready_subject:nt.subject(o.orderNum),
+      ready_body:nt.body(o.name,o.orderNum),
+    });
+    orders[i].status='notified';
+    orders[i].notifiedAt=new Date().toISOString();
+    saveAllOrders(orders);
+    showNotifResult(i,ADMIN_T[adminLang].sentOk,'ok');
+    setTimeout(()=>{renderOrders();renderDocOrders();updateStats();},1500);
+  }catch(e){
+    showNotifResult(i,'⚠️ Envoi auto échoué — client de messagerie ouvert.','err');
+  }
+}
+
+function showNotifResult(i,msg,type){
+  const el=document.getElementById('nr_'+i);
+  if(el){el.className=`notif-result notif-${type}`;el.innerHTML=msg;el.classList.remove('hidden');}
+}
+
+function deleteOrder(i){
+  const t=ADMIN_T[adminLang];
+  if(!confirm(t.confirmDelete||'Supprimer cette commande ?'))return;
+  const orders=getAllOrders();
+  orders.splice(i,1);
+  saveAllOrders(orders);
+  renderOrders();renderDocOrders();updateStats();
+}
+
+function clearNotified(type){
+  const t=ADMIN_T[adminLang];
+  if(!confirm(t.confirmClear||'Supprimer toutes les commandes notifiées ?'))return;
+  const orders=getAllOrders().filter(o=>{
+    if(type==='photo') return o.type==='document'||o.status!=='notified';
+    if(type==='doc') return o.type!=='document'||o.status!=='notified';
+    return o.status!=='notified';
+  });
+  saveAllOrders(orders);
+  renderOrders();renderDocOrders();updateStats();
+}
+
+// ── MANUAL NOTIFY ─────────────────────────────────────────────
+async function manualNotify(type){
+  const prefix=type==='doc'?'Doc':'';
+  const num=document.getElementById(`manual${prefix}OrderNum`).value.trim();
+  const email=document.getElementById(`manual${prefix}Email`).value.trim();
+  const name=document.getElementById(`manual${prefix}Name`).value.trim()||'Client';
+  const l=document.getElementById(`manual${prefix}Lang`).value;
+  const resId=`manual${prefix}Result`;
+  if(!num||!email){showManualResult(resId,'Veuillez entrer le numéro de commande et le courriel.','err');return;}
+  const nt=NOTIFY_TEXT[l]||NOTIFY_TEXT.fr;
+  try{
+    initEJ();
+    await emailjs.send(EJ_SVC,EJ_TPL,{
+      order_number:num, client_name:name, client_phone:'', client_email:email,
+      print_size:'', material:'', mode:'', filename:num, image_data:'', lang:l,
+      is_ready_notification:'true',
+      ready_subject:nt.subject(num),
+      ready_body:nt.body(name,num),
+    });
+    showManualResult(resId,'✅ Notification envoyée !','ok');
+    const orders=getAllOrders();
+    const idx=orders.findIndex(o=>o.orderNum===num||o.email===email);
+    if(idx>=0){orders[idx].status='notified';orders[idx].notifiedAt=new Date().toISOString();saveAllOrders(orders);renderOrders();renderDocOrders();}
+  }catch(e){
+    const sub=encodeURIComponent(nt.subject(num));
+    const body=encodeURIComponent(nt.body(name,num));
+    showManualResult(resId,`⚠️ Envoi auto échoué — <a href="mailto:${email}?subject=${sub}&body=${body}" target="_blank" style="color:#4a90e2;">Envoyer manuellement</a>`,'err');
+  }
+}
+function showManualResult(id,msg,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.className=`notif-result notif-${type}`;el.textContent=msg;el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'),5000);
+}
+
+// ── PASSWORD MODAL ────────────────────────────────────────────
+function doChangePwd(){
+  const cur=document.getElementById('pwdCurrent').value;
+  const nw=document.getElementById('pwdNew').value;
+  const conf=document.getElementById('pwdConfirm').value;
+  const msg=document.getElementById('pwdMsg');
+  const t4=ADMIN_T[adminLang]||ADMIN_T.fr;
+  if(cur!==getAdminPwd()){msg.style.color='#cc1f3a';msg.textContent=t4.pwdWrong||'Mot de passe actuel incorrect.';return;}
+  if(nw.length<4){msg.style.color='#cc1f3a';msg.textContent=t4.pwdShort||'Au moins 4 caractères.';return;}
+  if(nw!==conf){msg.style.color='#cc1f3a';msg.textContent=t4.resetErrMatch||'Les mots de passe ne correspondent pas.';return;}
+  setAdminPwd(nw);msg.style.color='#4ade80';msg.textContent=t4.pwdSaveOk||'✅ Mot de passe modifié !';
+  setTimeout(closePwdModal,1500);
+}
+document.getElementById('pwdModal').addEventListener('click',function(e){if(e.target===this)closePwdModal();});
+
+// ── IN-STORE PAYMENT ───────────────────────────────────────────
+function doInStorePay(idx,method){
+  const orders=getAllOrders();
+  const o=orders[idx];
+  if(!o) return;
+  if(!confirm(`Confirmer paiement ${method} pour ${o.name} — $${(o.total||0).toFixed(2)} ?`)) return;
+  orders[idx].status='payment_received';
+  orders[idx].payMethod=method;
+  saveAllOrders(orders);
+  archiveOrderWithMethod(o,method);
+  renderOrders();renderDocOrders();updateStats();
+}
+function archiveOrderWithMethod(o,method){
+  if(o.subtotal==null&&o.total==null) return;
+  const archive=getArchive();
+  if(archive.find(a=>a.orderNum===o.orderNum)) return;
+  archive.push({
+    orderNum:o.orderNum,name:o.name,email:o.email,
+    type:o.type||'image',date:o.date,paidAt:new Date().toISOString(),
+    subtotal:o.subtotal||0,gst:o.gst||0,qst:o.qst||0,total:o.total||0,
+    payMethod:method,
+  });
+  saveArchive(archive);
+}
+
+// ── FULL BACKUP EXPORT / IMPORT ─────────────────────────────────
+function todayStr(){
+  const n=new Date(),p=v=>String(v).padStart(2,'0');
+  return `${n.getFullYear()}${p(n.getMonth()+1)}${p(n.getDate())}`;
+}
+
+function exportFullBackup(){
+  const orders=getAllOrders();
+  const archive=getArchive();
+  const t2=ADMIN_T[adminLang]||ADMIN_T.fr;
+
+  if(!orders.length&&!archive.length){
+    alert(t2.noDataExport||'Aucune donnée à exporter.');return;
+  }
+  const dates=orders.map(o=>new Date(o.date)).filter(d=>!isNaN(d));
+  const minD=dates.length?new Date(Math.min(...dates)):new Date();
+  const maxD=dates.length?new Date(Math.max(...dates)):new Date();
+  const fmt=d=>{const p=v=>String(v).padStart(2,'0');return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`;};
+
+  const backup={
+    exportDate:new Date().toISOString(),
+    orderCount:orders.length,
+    archiveCount:archive.length,
+    orders,
+    paymentArchive:archive,
+  };
+  const fname=`${fmt(minD)}-${fmt(maxD)}_订单统计_备份.json`;
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=fname;a.style.display='none';
+  document.body.appendChild(a);
+  setTimeout(()=>{
+    a.click();
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  },100);
+  showBackupResult(`✅ ${t2.csvDownloaded||'Fichier téléchargé'}: ${fname}`,'ok');
+}
+
+function importFullBackup(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      const orders=data.orders||data; // support raw array too
+      if(!Array.isArray(orders))throw new Error('Format invalide');
+      // Restore payment archive if present
+      if(data.paymentArchive&&Array.isArray(data.paymentArchive)){
+        const existingArchive=getArchive();
+        const existingNums=new Set(existingArchive.map(a=>a.orderNum));
+        data.paymentArchive.forEach(a=>{
+          if(!existingNums.has(a.orderNum)) existingArchive.push(a);
+        });
+        saveArchive(existingArchive);
+      }
+      const existing=getAllOrders();
+      const existingNums=new Set(existing.map(o=>o.orderNum));
+      let added=0,skipped=0;
+      orders.forEach(o=>{
+        if(!existingNums.has(o.orderNum)){existing.push(o);added++;}
+        else skipped++;
+      });
+      saveAllOrders(existing);
+      renderOrders();renderDocOrders();updateStats();
+      showBackupResult(`✅ ${added} commande(s) importée(s), ${skipped} déjà existante(s) ignorée(s).`,'ok');
+    }catch(err){
+      showBackupResult('⚠️ Erreur: fichier invalide. '+err.message,'err');
+    }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function showBackupResult(msg,type){
+  const el=document.getElementById('backupResult');
+  el.className=`notif-result notif-${type}`;el.textContent=msg;el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'),6000);
+}
+
+// ── PAYMENT ARCHIVE ────────────────────────────────────────────
+// Independent from order list — survives order deletion
+function getArchive(){
+  try{return JSON.parse(localStorage.getItem('acco_payment_archive')||'[]');}
+  catch{return[];}
+}
+function saveArchive(arr){
+  try{localStorage.setItem('acco_payment_archive',JSON.stringify(arr));}
+  catch(e){console.error('Archive save error:',e);}
+}
+function archiveOrder(o){
+  // Only archive if has financial data
+  if(o.subtotal==null&&o.total==null) return;
+  const archive=getArchive();
+  // Don't duplicate
+  if(archive.find(a=>a.orderNum===o.orderNum)) return;
+  archive.push({
+    orderNum: o.orderNum,
+    name: o.name,
+    email: o.email,
+    type: o.type||'image',
+    date: o.date,
+    paidAt: new Date().toISOString(),
+    subtotal: o.subtotal||0,
+    gst: o.gst||0,
+    qst: o.qst||0,
+    total: o.total||0,
+    payMethod: o.payMethod||'Interac',
+  });
+  saveArchive(archive);
+}
+
+// ── STATISTICS REPORT ──────────────────────────────────────────
+let currentStatsData=null;
+
+function generateStats(type){
+  const fromStr=document.getElementById('statsFrom').value;
+  const toStr=document.getElementById('statsTo').value;
+  const t2=ADMIN_T[adminLang]||ADMIN_T.fr;
+  if(!fromStr||!toStr){
+    alert(t2.dateRequired||'Veuillez sélectionner une date de début et une date de fin.');
+    return;
+  }
+  const fromDate=new Date(fromStr+'T00:00:00');
+  const toDate=new Date(toStr+'T23:59:59');
+
+  // Read from archive
+  const archive=getArchive();
+  let filtered=archive.filter(a=>{
+    const isType=type==='image' ? a.type!=='document' : a.type==='document';
+    const d=new Date(a.paidAt||a.date);
+    return isType && d>=fromDate && d<=toDate;
+  });
+
+  // Also pull paid orders still in order list but not yet in archive
+  const liveOrders=getAllOrders();
+  const paidStatuses=['payment_received','ready','notified'];
+  const archiveNums=new Set(archive.map(a=>a.orderNum));
+  liveOrders.filter(o=>{
+    const isType=type==='image' ? o.type!=='document' : o.type==='document';
+    const d=new Date(o.date);
+    return isType && paidStatuses.includes(o.status) && d>=fromDate && d<=toDate && !archiveNums.has(o.orderNum);
+  }).forEach(o=>{
+    archiveOrder(o);
+    if(o.subtotal!=null) filtered.push({
+      orderNum:o.orderNum,name:o.name,email:o.email,type:o.type||'image',
+      date:o.date,paidAt:o.date,payMethod:o.payMethod||'Interac',
+      subtotal:o.subtotal||0,gst:o.gst||0,qst:o.qst||0,total:o.total||0,
+    });
+  });
+
+  filtered.sort((a,b)=>new Date(a.paidAt||a.date)-new Date(b.paidAt||b.date));
+
+  const rows=filtered.map((a,i)=>({
+    idx:i+1,
+    orderNum:a.orderNum,
+    name:a.name||'',
+    date:new Date(a.paidAt||a.date).toLocaleDateString('fr-CA'),
+    subtotal:a.subtotal||0,
+    gst:a.gst||0,
+    qst:a.qst||0,
+    total:a.total||0,
+    payMethod:a.payMethod||'Interac',
+  }));
+
+  const totals=rows.reduce((acc,r)=>({
+    subtotal:+(acc.subtotal+r.subtotal).toFixed(2),
+    gst:+(acc.gst+r.gst).toFixed(2),
+    qst:+(acc.qst+r.qst).toFixed(2),
+    total:+(acc.total+r.total).toFixed(2),
+  }),{subtotal:0,gst:0,qst:0,total:0});
+
+  const byMethod={};
+  rows.forEach(r=>{
+    const m=r.payMethod;
+    if(!byMethod[m]) byMethod[m]={count:0,total:0};
+    byMethod[m].count++;
+    byMethod[m].total=+(byMethod[m].total+r.total).toFixed(2);
+  });
+
+  currentStatsData={type,rows,totals,byMethod,fromDate:fromStr,toDate:toStr};
+  renderStatsTable();
+}
+
+function renderStatsTable(){
+  if(!currentStatsData)return;
+  const {type,rows,totals,byMethod,fromDate,toDate}=currentStatsData;
+  const t2=ADMIN_T[adminLang]||ADMIN_T.fr;
+  const typeTitle=type==='image'?(t2.rapportImageTitle||'📸 Rapport Image'):(t2.rapportDocTitle||'📄 Rapport Documents');
+  const paidLabel=(t2.commandesPaid||((n)=>`${n} commande(s) payée(s)`))(rows.length);
+  document.getElementById('statsResultTitle').textContent=`${typeTitle} — ${fromDate} → ${toDate} (${paidLabel})`;
+  document.getElementById('statsResultBox').classList.remove('hidden');
+
+  const fmt=v=>`$${(v||0).toFixed(2)}`;
+
+  if(!rows.length){
+    document.getElementById('statsTableHead').innerHTML='';
+    document.getElementById('statsTableBody').innerHTML=`<tr><td colspan="9" style="padding:20px;text-align:center;color:#6a5a18;">${t2.noStatsData||'Aucune commande payée trouvée dans cette période.'}</td></tr>`;
+    return;
+  }
+
+  const thead=document.getElementById('statsTableHead');
+  thead.innerHTML=`
+    <th style="padding:8px;">#</th>
+    <th style="padding:8px;">N° commande</th>
+    <th style="padding:8px;">Client</th>
+    <th style="padding:8px;">Date paiement</th>
+    <th style="padding:8px;">Mode paiement</th>
+    <th style="padding:8px;text-align:right;">Sous-total</th>
+    <th style="padding:8px;text-align:right;">TPS/GST</th>
+    <th style="padding:8px;text-align:right;">TVQ/QST</th>
+    <th style="padding:8px;text-align:right;">Total</th>`;
+
+  const payColor={'Interac':'#4a90e2','Comptant':'#D4AF37','Débit':'#4a90e2','Visa':'#4a90e2','Mastercard':'#cc1f3a'};
+  const tbody=document.getElementById('statsTableBody');
+  tbody.innerHTML=rows.map(r=>`
+    <tr style="border-bottom:1px solid #2a2a4a;">
+      <td style="padding:8px;">${r.idx}</td>
+      <td style="padding:8px;color:#4a90e2;">${r.orderNum}</td>
+      <td style="padding:8px;">${r.name}</td>
+      <td style="padding:8px;">${r.date}</td>
+      <td style="padding:8px;"><span style="border:0.5px solid ${payColor[r.payMethod]||'#888'};color:${payColor[r.payMethod]||'#888'};border-radius:4px;padding:1px 8px;font-size:11px;">${r.payMethod}</span></td>
+      <td style="padding:8px;text-align:right;">${fmt(r.subtotal)}</td>
+      <td style="padding:8px;text-align:right;">${fmt(r.gst)}</td>
+      <td style="padding:8px;text-align:right;">${fmt(r.qst)}</td>
+      <td style="padding:8px;text-align:right;font-weight:700;">${fmt(r.total)}</td>
+    </tr>`).join('')+
+    `<tr style="border-top:2px solid #4a90e2;font-weight:700;background:#0f1a30;">
+      <td style="padding:10px;" colspan="5">TOTAL (${rows.length} commandes)</td>
+      <td style="padding:10px;text-align:right;">${fmt(totals.subtotal)}</td>
+      <td style="padding:10px;text-align:right;">${fmt(totals.gst)}</td>
+      <td style="padding:10px;text-align:right;">${fmt(totals.qst)}</td>
+      <td style="padding:10px;text-align:right;color:#34c759;">${fmt(totals.total)}</td>
+    </tr>`+
+    // Subtotals by payment method
+    `<tr><td colspan="9" style="padding:12px 8px 4px;font-size:12px;color:#6a5a18;font-weight:700;letter-spacing:0.5px;">${(ADMIN_T[adminLang]||ADMIN_T.fr).payMethodTitle||'RÉPARTITION PAR MODE DE PAIEMENT'}</td></tr>`+
+    Object.entries(byMethod).map(([m,v])=>`
+    <tr style="border-bottom:0.5px solid #1a1a2a;">
+      <td colspan="4" style="padding:6px 8px;color:${payColor[m]||'#aaa'};">
+        <span style="border:0.5px solid ${payColor[m]||'#555'};border-radius:4px;padding:1px 8px;font-size:11px;">${m}</span>
+        <span style="margin-left:8px;font-size:12px;color:#6a5a18;">${v.count} commande(s)</span>
+      </td>
+      <td colspan="5" style="padding:6px 8px;text-align:right;font-weight:700;color:${payColor[m]||'#aaa'};">${fmt(v.total)}</td>
+    </tr>`).join('');
+}
+
+function buildStatsCSV(){
+  if(!currentStatsData)return'';
+  const {rows,totals,byMethod}=currentStatsData;
+  const lines=['#,N° commande,Client,Date paiement,Mode paiement,Sous-total,TPS/GST,TVQ/QST,Total'];
+  rows.forEach(r=>{
+    lines.push([r.idx,r.orderNum,`"${r.name}"`,r.date,r.payMethod||'Interac',
+      r.subtotal!=null?r.subtotal.toFixed(2):'',
+      r.gst!=null?r.gst.toFixed(2):'',
+      r.qst!=null?r.qst.toFixed(2):'',
+      r.total!=null?r.total.toFixed(2):''].join(','));
+  });
+  lines.push(['','','','','TOTAL',totals.subtotal.toFixed(2),totals.gst.toFixed(2),totals.qst.toFixed(2),totals.total.toFixed(2)].join(','));
+  lines.push(['']);
+  lines.push(['Mode de paiement,Commandes,Total']);
+  if(byMethod) Object.entries(byMethod).forEach(([m,v])=>{
+    lines.push([m,v.count,v.total.toFixed(2)].join(','));
+  });
+  return lines.join('\n');
+}
+
+function downloadStatsCSV(){
+  if(!currentStatsData)return;
+  const csv=buildStatsCSV();
+  const {type,fromDate,toDate}=currentStatsData;
+  const fname=`${fromDate.replace(/-/g,'')}-${toDate.replace(/-/g,'')}_订单统计_${type==='image'?'图片':'文档'}.csv`;
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=fname;a.style.display='none';
+  document.body.appendChild(a);
+  setTimeout(()=>{
+    a.click();
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  },100);
+  const t2=ADMIN_T[adminLang]||ADMIN_T.fr;
+  showBackupResult(`✅ ${t2.csvDownloaded||'Fichier téléchargé'}: ${fname}`,'ok');
+}
+
+async function emailStatsReport(){
+  if(!currentStatsData)return;
+  const {type,rows,totals,fromDate,toDate}=currentStatsData;
+  const fmt=v=>v==null?'—':`$${v.toFixed(2)}`;
+  const title=type==='image'?'Rapport Image':'Rapport Documents';
+
+  let body=`${title} — ${fromDate} au ${toDate}\n${rows.length} commande(s) payée(s)\n\n`;
+  body+=`#\tN° commande\tDate\tSous-total\tTPS\tTVQ\tTotal\n`;
+  rows.forEach(r=>{
+    body+=`${r.idx}\t${r.orderNum}\t${r.date}\t${fmt(r.subtotal)}\t${fmt(r.gst)}\t${fmt(r.qst)}\t${fmt(r.total)}\n`;
+  });
+  body+=`\nTOTAL\t\t\t${fmt(totals.subtotal)}\t${fmt(totals.gst)}\t${fmt(totals.qst)}\t${fmt(totals.total)}\n`;
+
+  initEJ();
+  try{
+    await emailjs.send(EJ_SVC,'template_pr5vbfv',{
+      order_number:`Rapport ${fromDate}–${toDate}`,client_name:'Comptabilité',client_phone:'',
+      client_email:'info@accophoto.com',print_size:'',material:'',mode:'',filename:'',image_data:'',lang:'fr',
+      is_ready_notification:'false',
+      ready_subject:`📊 ${title} — ${fromDate} au ${toDate}`,
+      ready_body:body,
+    });
+    alert('✅ Rapport envoyé par courriel à info@accophoto.com');
+  }catch(e){
+    console.error('Email report error:',e);
+    alert('⚠️ Envoi échoué. Veuillez télécharger le CSV et l\'envoyer manuellement.\n'+(e?.text||e?.message||''));
+  }
+}
+
+</script>
+<!-- In-store payment modal -->
+
+</html>

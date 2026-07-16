@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commande en ligne / Order online — ACCO Photo</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system,"PingFang SC","Microsoft YaHei",Arial,sans-serif; background:#f4f5f7; margin:0; padding:16px; color:#222; }
+.container { max-width:780px; margin:0 auto; }
+h1 { margin-bottom:4px; }
+.sub { color:#666; font-size:14px; margin-bottom:16px; }
+.card { background:white; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+label { display:block; font-weight:600; margin-bottom:6px; font-size:14px; }
+select,input[type=number],input[type=text],input[type=email],input[type=tel] {
+  width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:15px; margin-bottom:12px;
+}
+.row { display:flex; gap:10px; }
+.row > div { flex:1; }
+.dropzone { border:2px dashed #bbb; border-radius:10px; padding:28px; text-align:center; color:#888; cursor:pointer; transition:0.2s; font-size:15px; }
+.dropzone:hover,.dropzone.drag-over { border-color:#4a90e2; color:#4a90e2; }
+.result { padding:14px; border-radius:10px; font-size:14px; margin-top:12px; line-height:1.7; }
+.good { background:#e6f7ec; border:1px solid #34c759; }
+.ok   { background:#fff8e1; border:1px solid #f5a623; }
+.bad  { background:#fdecea; border:1px solid #e74c3c; }
+.crop-wrap { position:relative; max-width:100%; overflow:hidden; background:#222; border-radius:8px; touch-action:none; display:flex; justify-content:center; align-items:center; }
+.crop-img { max-width:100%; display:block; user-select:none; -webkit-user-drag:none; }
+.crop-box { position:absolute; border:2px solid #4a90e2; box-shadow:0 0 0 9999px rgba(0,0,0,0.5); cursor:move; touch-action:none; }
+.controls { margin-top:10px; display:flex; align-items:center; gap:10px; }
+.controls input[type=range] { flex:1; }
+button { background:#4a90e2; color:white; border:none; border-radius:8px; padding:10px 18px; font-size:15px; cursor:pointer; margin-top:8px; margin-right:6px; transition:0.15s; }
+button:hover { opacity:0.88; }
+button:disabled { background:#aaa; cursor:not-allowed; opacity:1; }
+button.secondary { background:#888; }
+button.green-btn { background:#34c759; }
+.hidden { display:none !important; }
+.small-note { font-size:12px; color:#888; margin-top:6px; }
+.orient-btns { display:flex; gap:10px; margin-bottom:4px; }
+.orient-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:#f0f2f5; color:#444; border:2px solid #ddd; border-radius:10px; padding:10px 8px; font-size:13px; cursor:pointer; transition:0.15s; margin-top:0; }
+.orient-btn.active { border-color:#4a90e2; background:#eaf2fb; color:#4a90e2; font-weight:600; }
+.orient-icon { display:block; border:2.5px solid currentColor; border-radius:3px; }
+.portrait-icon { width:20px; height:30px; }
+.landscape-icon { width:30px; height:20px; }
+.mode-tabs { display:flex; margin-bottom:12px; border:1.5px solid #ddd; border-radius:10px; overflow:hidden; }
+.mode-tab { flex:1; padding:9px 6px; font-size:13px; font-weight:600; background:#f0f2f5; color:#666; border:none; cursor:pointer; transition:0.15s; margin-top:0; border-radius:0; }
+.mode-tab.active { background:#4a90e2; color:white; }
+.fit-preview-wrap { background:#888; border-radius:8px; display:flex; justify-content:center; align-items:center; padding:14px; min-height:160px; }
+.fit-canvas-wrap { background:white; display:flex; justify-content:center; align-items:center; box-shadow:0 2px 10px rgba(0,0,0,0.25); }
+.fit-canvas-wrap img { display:block; max-width:100%; max-height:100%; object-fit:contain; }
+.material-btns { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+.material-btn { padding:6px 13px; border-radius:20px; border:1.5px solid #ddd; background:#f5f5f5; font-size:13px; cursor:pointer; transition:0.15s; margin-top:0; color:#444; }
+.material-btn.active { border-color:#4a90e2; background:#eaf2fb; color:#4a90e2; font-weight:600; }
+.low-quality-box { margin-top:12px; padding:13px 15px; border-radius:10px; background:#fff3cd; border:1.5px solid #f0a500; color:#7a4f00; font-size:13px; line-height:1.7; }
+.low-quality-box strong { display:block; font-size:14px; margin-bottom:5px; color:#5a3800; }
+.actual-size-scroll { overflow:auto; border:1px solid #ddd; border-radius:8px; background:repeating-conic-gradient(#f0f0f0 0% 25%,#fafafa 0% 50%) 50%/16px 16px; max-height:55vh; padding:14px; display:flex; justify-content:center; }
+.actual-size-img { display:block; box-shadow:0 1px 6px rgba(0,0,0,0.25); }
+.calibrate-btn-row { display:flex; justify-content:flex-end; margin-bottom:7px; align-items:center; gap:8px; }
+.calibrate-link { background:none; border:none; color:#4a90e2; font-size:13px; text-decoration:underline; cursor:pointer; padding:3px 0; margin-top:0; }
+.calibrate-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+.calibrate-overlay.hidden { display:none !important; }
+.calibrate-modal { background:white; border-radius:14px; padding:20px; max-width:400px; width:100%; max-height:90vh; overflow-y:auto; }
+.calibrate-card-wrap { background:#eee; border-radius:10px; padding:22px 12px; margin:14px 0; display:flex; justify-content:center; overflow-x:auto; }
+.calibrate-card { background:linear-gradient(135deg,#4a90e2,#357abd); border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.3); position:relative; }
+.calibrate-card::after { content:"💳"; position:absolute; bottom:7px; right:9px; font-size:17px; opacity:0.6; }
+.calibrated-badge { display:inline-flex; align-items:center; gap:4px; background:#e6f7ec; color:#1a7a3a; border:1px solid #34c759; border-radius:16px; padding:3px 10px; font-size:12px; }
+.calibrated-badge.hidden { display:none !important; }
+.frame-note { font-size:13px; color:#6a4a00; background:#fff8e1; border:1px solid #f0d070; border-radius:8px; padding:9px 12px; margin-bottom:10px; line-height:1.5; flex-basis:100%; }
+.cart-success-flash { background:#e6f7ec; border:1.5px solid #34c759; color:#1a7a3a; padding:14px 16px; border-radius:10px; margin-top:12px; font-size:14px; font-weight:600; text-align:center; animation:fadeIn 0.3s; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+.cart-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid #eee; border-radius:10px; margin-bottom:8px; background:#fafafa; }
+.cart-thumb { width:64px; height:64px; object-fit:cover; border-radius:6px; flex-shrink:0; }
+.cart-info { flex:1; font-size:13px; line-height:1.6; }
+.cart-info strong { font-size:14px; display:block; margin-bottom:2px; }
+.cart-qty { display:flex; align-items:center; gap:6px; margin-top:6px; }
+.cart-qty button { padding:2px 10px; font-size:15px; margin:0; border-radius:6px; background:#eee; color:#333; min-width:28px; }
+.cart-qty button:hover { background:#ddd; }
+.cart-qty-num { font-size:15px; font-weight:700; min-width:24px; text-align:center; }
+.cart-remove { background:#fdecea; color:#e74c3c; border:none; border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; margin-top:0; flex-shrink:0; align-self:flex-start; }
+.cart-remove:hover { background:#e74c3c; color:white; }
+.cart-empty { text-align:center; color:#aaa; padding:20px; font-size:14px; }
+.cart-count-badge { display:inline-block; background:#4a90e2; color:white; border-radius:12px; padding:1px 8px; font-size:13px; margin-left:4px; }
+.send-btn { width:100%; padding:14px; font-size:16px; font-weight:700; background:#34c759; border-radius:10px; border:none; color:white; cursor:pointer; margin-top:10px; transition:0.2s; }
+.send-btn:hover { background:#28a745; }
+.send-btn:disabled { background:#aaa; }
+.send-status { margin-top:10px; padding:14px; border-radius:10px; font-size:14px; line-height:1.7; }
+.send-status.success  { background:#e6f7ec; border:1px solid #34c759; color:#1a7a3a; }
+.send-status.error    { background:#fdecea; border:1px solid #e74c3c; color:#c0392b; }
+.send-status.fallback { background:#eaf2fb; border:1px solid #4a90e2; color:#1a5276; }
+.progress-bar-wrap { background:#eee; border-radius:6px; height:10px; overflow:hidden; margin-top:6px; }
+.progress-bar { height:100%; background:#4a90e2; transition:width 0.3s; border-radius:6px; }
+/* E-transfer box */
+.etransfer-box { background:#f0f8ff; border:1.5px solid #4a90e2; border-radius:12px; padding:18px; margin-top:14px; }
+.etransfer-box h3 { margin:0 0 10px; font-size:16px; color:#1a5276; }
+.etransfer-box .amount { font-size:28px; font-weight:800; color:#1a5276; margin:10px 0; }
+.etransfer-box .order-num { font-size:13px; background:#4a90e2; color:white; padding:4px 12px; border-radius:8px; display:inline-block; margin-bottom:10px; }
+.etransfer-steps { font-size:14px; line-height:1.9; color:#333; }
+.etransfer-steps li { margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 标题行：左边标题，右下角语言选择器 -->
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:4px;">
+    <h1 id="t_title" style="font-size:15px;margin:0;font-weight:700;">Commande en ligne / Order online — ACCO Photo</h1>
+    <select id="langSelect" style="width:auto;display:inline-block;margin-bottom:0;font-size:12px;padding:4px 6px;border-radius:6px;flex-shrink:0;margin-left:10px;">
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
+  </div>
+  <div class="sub" id="t_sub" style="font-size:12px;margin-bottom:10px;">Vérifiez la qualité, ajustez le cadrage, puis soumettez toutes vos images en une seule commande.</div>
+
+  <!-- CONTACT (top) -->
+  <div class="card">
+    <label id="t_contactTitle" style="font-size:15px;margin-bottom:14px;">Vos coordonnées</label>
+    <div class="row">
+      <div>
+        <label id="t_firstNameLabel">Prénom</label>
+        <input type="text" id="clientFirstName" placeholder="ex : Marie">
+      </div>
+      <div>
+        <label id="t_lastNameLabel">Nom de famille</label>
+        <input type="text" id="clientLastName" placeholder="ex : Tremblay">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label id="t_phoneLabel">Téléphone</label>
+        <input type="tel" id="clientPhone" placeholder="ex : 514-555-0123">
+      </div>
+      <div>
+        <label id="t_emailLabel">Courriel</label>
+        <input type="email" id="clientEmail" placeholder="ex : marie@courriel.com">
+      </div>
+    </div>
+    <div class="small-note" id="t_contactNote" style="margin-top:-6px;">Remplissez vos coordonnées avant de traiter vos photos — elles seront incluses dans le nom de chaque fichier.</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <label id="t_materialLabel">Matériau d'impression</label>
+    <div class="material-btns" id="materialBtns">
+      <button type="button" class="material-btn active" data-val="Papier Photo"        id="mat_0">Papier Photo</button>
+      <button type="button" class="material-btn"        data-val="Large Format Photo"  id="mat_lf">Large Format Photo / Poster</button>
+      <button type="button" class="material-btn"        data-val="Canvas Standard 3/4" id="mat_1">Canvas Standard 3/4"</button>
+      <button type="button" class="material-btn"        data-val="Canvas Gallery 1.5"  id="mat_2">Canvas Galerie 1½"</button>
+      <button type="button" class="material-btn"        data-val="Adhesive Vinyl"      id="mat_3">Adhesive Vinyl</button>
+      <button type="button" class="material-btn"        data-val="Coroplast"           id="mat_4">Coroplast</button>
+      <button type="button" class="material-btn"        data-val="Foamboard"           id="mat_5">Foamboard</button>
+      <button type="button" class="material-btn"        data-val="Banner"              id="mat_6">Banner</button>
+      <button type="button" class="material-btn"        data-val="Popup Banner"        id="mat_7">Popup Banner 33"×81.5"</button>
+      <button type="button" class="material-btn"        data-val="Acrylique"           id="mat_8">Acrylique</button>
+      <button type="button" class="material-btn"        data-val="Aluminium"           id="mat_9">Aluminium</button>
+      <button type="button" class="material-btn"        data-val="Autre"               id="mat_10">Autre</button>
+    </div>
+
+    <label id="t_sizeLabel" style="margin-top:6px;">Format d'impression (pouces)</label>
+    <select id="sizePreset">
+      <option value="">— Choisir un format —</option>
+    </select>
+    <div id="sizePriceDisplay" style="font-size:14px;color:#1a7a3a;font-weight:700;margin-top:-6px;margin-bottom:10px;min-height:20px;"></div>
+
+    <div id="customSize" class="hidden" style="flex-wrap:wrap;">
+      <div class="row" style="width:100%;">
+        <div><label id="t_widthLabel">Largeur (pouces)</label><input type="number" id="customW" value="24" min="1" step="0.1"></div>
+        <div><label id="t_heightLabel">Hauteur (pouces)</label><input type="number" id="customH" value="36" min="1" step="0.1"></div>
+      </div>
+    </div>
+
+    <div id="t_frameNote" class="small-note" style="margin-bottom:10px;">Si vous avez un cadre non standard, mesurez l'ouverture à l'arrière du cadre et entrez cette dimension.</div>
+
+    <label id="t_orientLabel" style="margin-top:4px;">Orientation</label>
+    <div class="orient-btns">
+      <button type="button" class="orient-btn active" id="orientPortrait" onclick="setOrientation('portrait')">
+        <span class="orient-icon portrait-icon"></span><span id="t_portrait">Portrait</span>
+      </button>
+      <button type="button" class="orient-btn" id="orientLandscape" onclick="setOrientation('landscape')">
+        <span class="orient-icon landscape-icon"></span><span id="t_landscape">Paysage</span>
+      </button>
+    </div>
+    <!-- Custom price / product name (shown for Autre or any special order) -->
+    <div id="customPriceSection" class="hidden" style="margin-top:10px;padding:14px;background:#fff8e1;border:1.5px solid #f0a500;border-radius:10px;">
+      <div style="font-size:13px;color:#7a4f00;margin-bottom:10px;font-weight:600;">🏷️ <span id="t_customPriceTitle">Prix convenu / Commande spéciale</span></div>
+      <div class="row">
+        <div>
+          <label id="t_customProductLabel" style="font-size:13px;">Description du produit</label>
+          <input type="text" id="customProductName" placeholder="ex: Toile 20x30" style="margin-bottom:0;">
+        </div>
+        <div style="max-width:130px;">
+          <label id="t_customPriceLabel" style="font-size:13px;">Prix convenu ($)</label>
+          <input type="number" id="customPrice" placeholder="0.00" min="0" step="0.01" style="margin-bottom:0;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <label id="t_uploadLabel">Téléverser une photo</label>
+    <div class="dropzone" id="dropzone">Cliquez ou déposez une image ici</div>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/tiff,image/webp" class="hidden">
+    <div id="analysis"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card hidden" id="cropCard">
+    <div class="mode-tabs">
+      <button type="button" class="mode-tab active" id="tabCrop" onclick="setMode('crop')">✂️ <span id="t_tabCropLabel">Recadrer</span></button>
+      <button type="button" class="mode-tab" id="tabFit" onclick="setMode('fit')">⬜ <span id="t_tabFitLabel">Ajuster (bordures blanches)</span></button>
+    </div>
+    <div id="modeCrop">
+      <label id="t_cropLabel">Recadrer</label>
+      <div class="crop-wrap" id="cropWrap"><img id="cropImg" class="crop-img"><div class="crop-box" id="cropBox"></div></div>
+      <div class="controls"><span id="t_zoomLabel">Zone</span><input type="range" id="zoomSlider" min="20" max="100" value="100"></div>
+      <div class="small-note" id="t_cropNote">La zone dans le cadre sera imprimée.</div>
+      <div id="lowQualityWarning" class="low-quality-box hidden"></div>
+    </div>
+    <div id="modeFit" class="hidden">
+      <label id="t_fitLabel">Image complète centrée, bordures blanches</label>
+      <div class="fit-preview-wrap" id="fitPreviewWrap">
+        <div class="fit-canvas-wrap" id="fitCanvasWrap"><img id="fitImg" src="" alt=""></div>
+      </div>
+      <div class="small-note" id="t_fitNote">Les zones blanches apparaîtront à l'impression.</div>
+      <div id="lowQualityWarningFit" class="low-quality-box hidden"></div>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+      <label id="t_actualSizeLabel">Aperçu à la taille réelle</label>
+      <div class="calibrate-btn-row">
+        <button type="button" class="calibrate-link" id="calibrateBtn">🔧 <span id="t_calibrateBtn">Calibrer</span></button>
+        <span id="calibratedBadge" class="calibrated-badge hidden">✓ <span id="t_calibratedBadge">Calibré</span></span>
+      </div>
+      <div class="actual-size-scroll"><img id="actualSizeImg" class="actual-size-img" src="" alt=""></div>
+      <div class="small-note" id="t_actualSizeNote">Faites défiler pour voir l'image complète.</div>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+      <label id="t_qtyLabel">Quantité</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <button type="button" id="qtyMinus" style="margin:0;padding:6px 16px;font-size:18px;">−</button>
+        <span id="qtyDisplay" style="font-size:20px;font-weight:700;min-width:36px;text-align:center;">1</span>
+        <button type="button" id="qtyPlus" style="margin:0;padding:6px 16px;font-size:18px;">+</button>
+      </div>
+      <button class="green-btn" id="addToCartBtn" style="width:100%;padding:13px;font-size:15px;font-weight:700;margin:0;">
+        🛒 <span id="t_addToCartLabel">Ajouter au panier</span>
+      </button>
+      <div id="cartSuccessFlash" class="hidden"></div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Cart -->
+  <div class="card" id="cartCard">
+    <label><span id="t_cartLabelText">Panier</span> <span class="cart-count-badge" id="cartCountBadge">0</span></label>
+    <div id="cartList"><div class="cart-empty" id="cartEmptyMsg">Aucune photo dans le panier.</div></div>
+    <div id="cartActions" class="hidden" style="margin-top:10px;">
+      <button type="button" class="secondary" id="addAnotherBtn" style="width:100%;margin:0;">➕ <span id="t_addAnotherLabel">Traiter une autre photo</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 5: Submit -->
+  <div class="card">
+    <div class="small-note" id="t_filenamePreview" style="margin-bottom:10px;color:#4a90e2;font-weight:600;"></div>
+    <button class="send-btn" id="sendBtn">📤 <span id="t_sendBtnLabel">Soumettre la commande</span></button>
+    <div class="hidden" id="uploadProgressSection" style="margin-top:12px;">
+      <div class="small-note" id="uploadProgressLabel">Envoi en cours...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    </div>
+    <div class="send-status hidden" id="sendStatus"></div>
+
+    <!-- E-transfer instructions (shown after submit) -->
+    <div class="etransfer-box hidden" id="etransferBox">
+      <h3 id="t_etransferTitle">💳 Paiement par virement Interac (e-Transfer)</h3>
+      <div class="order-num" id="etransferOrderNum"></div>
+      <div id="etransferAmount"></div>
+      <div class="etransfer-steps">
+        <ol id="t_etransferSteps"></ol>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Calibration overlay -->
+<div class="calibrate-overlay hidden" id="calibrateOverlay">
+  <div class="calibrate-modal">
+    <label id="t_calibrateTitle" style="font-size:15px;margin-bottom:8px;display:block;">Calibrer</label>
+    <div class="small-note" id="t_calibrateInstructions">Tenez une carte de crédit (85,6×54mm) contre l'écran et ajustez le curseur.</div>
+    <div class="calibrate-card-wrap"><div class="calibrate-card" id="calibrateCard"></div></div>
+    <input type="range" id="calibrateSlider" min="60" max="500" value="120" style="width:100%;margin-top:8px;">
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button type="button" class="secondary" id="calibrateCancelBtn" style="flex:1;">Annuler</button>
+      <button type="button" id="calibrateConfirmBtn" style="flex:1;margin-top:0;">Terminé</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EJ_PUB='SBMK7tfjBexkhDaTR',EJ_SVC='service_8xombom',EJ_TPL='template_byqjw25',MONTHLY=200;
+try{if(typeof emailjs!=='undefined')emailjs.init(EJ_PUB);}catch(e){}
+
+const MATERIALS=[
+  {val:'Papier Photo',        fr:'Papier Photo',                  en:'Photo Paper',             zh:'相片纸'},
+  {val:'Large Format Photo',  fr:'Grand format photo / Poster',   en:'Large Format Photo / Poster', zh:'大幅面照片/海报'},
+  {val:'Canvas Standard 3/4', fr:'Canvas Standard 3/4"',          en:'Canvas Standard 3/4"',    zh:'画布标准3/4"'},
+  {val:'Canvas Gallery 1.5',  fr:'Canvas Galerie 1½"',            en:'Canvas Gallery 1½"',      zh:'画布画廊1½"'},
+  {val:'Adhesive Vinyl',      fr:'Vinyl adhésif',                 en:'Adhesive Vinyl',          zh:'不干胶'},
+  {val:'Coroplast',           fr:'Coroplast',                     en:'Coroplast',               zh:'中空板'},
+  {val:'Foamboard',           fr:'Foamboard',                     en:'Foamboard',               zh:'泡沫板'},
+  {val:'Banner',              fr:'Bannière',                      en:'Banner',                  zh:'横幅'},
+  {val:'Popup Banner',        fr:'Bannière rétractable 33"×81.5"',en:'Popup Banner 33"×81.5"',  zh:'易拉宝 33"×81.5"'},
+  {val:'Acrylique',           fr:'Acrylique',                     en:'Acrylic',                 zh:'亚克力'},
+  {val:'Aluminium',           fr:'Aluminium',                     en:'Aluminium',               zh:'铝板'},
+  {val:'Autre',               fr:'Autre',                         en:'Other',                   zh:'其他'},
+];
+
+// ── CATALOG: all sizes and prices per material ───────────────
+const GST=0.05, QST=0.09975;
+const SHEETS_ID='1TfMjL8Dqp_6N4WE_gkktom2k42InuJgx7N7oxB01QlM';
+const SHEETS_CSV=`https://docs.google.com/spreadsheets/d/${SHEETS_ID}/export?format=csv&gid=0`;
+
+const CATALOG_DEFAULT={
+  'Papier Photo':[['4x6',3.5],['5x7',4.5],['6x8',5.5],['6x9',5.5],['8x10',7],['8x11',8],['8x12',8],['10x10',9],['10x12',10],['11x11',12],['11x14',15],['11x17',18],['12x12',12],['12x16',18],['12x18',18],['12x20',20],['12x24',25]],
+  'Large Format Photo':[['16x24',32],['18x24',36],['20x24',40],['20x30',58],['24x36',68],['24x40',75],['24x48',92],['24x54',97],['24x60',108],['20x36',58],['30x36',86],['36x36',97],['36x40',108],['36x50',135],['36x60',162],['36x70',176],['36x80',202],['36x90',226],['36x100',252],['36x120',280],['36x160',374],['36x180',421],['36x200',468],['20x44',69],['24x44',84],['30x44',99],['36x44',119],['40x44',132],['44x44',145],['44x50',165],['44x60',185],['44x70',216],['44x80',246],['44x100',286],['44x120',343],['44x160',458],['44x180',515],['44x200',572],['24x54',97],['36x54',136],['40x54',151],['50x54',189],['54x54',204],['54x60',227],['54x70',265],['54x80',281],['54x90',316],['54x100',351],['54x120',421],['54x160',562],['54x180',632],['54x200',702]],
+  'Adhesive Vinyl':[['16x24',32],['18x24',36],['20x24',40],['20x30',58],['24x36',68],['24x40',75],['24x48',92],['24x54',97],['24x60',108],['20x36',58],['30x36',86],['36x36',97],['36x40',108],['36x50',135],['36x60',162],['36x70',176],['36x80',202],['36x90',226],['36x100',252],['36x120',280],['36x160',374],['36x180',421],['36x200',468],['20x44',69],['24x44',84],['30x44',99],['36x44',119],['40x44',132],['44x44',145],['44x50',165],['44x60',185],['44x70',216],['44x80',246],['44x100',286],['44x120',343],['44x160',458],['44x180',515],['44x200',572],['24x54',97],['36x54',136],['40x54',151],['50x54',189],['54x54',204],['54x60',227],['54x70',265],['54x80',281],['54x90',316],['54x100',351],['54x120',421],['54x160',562],['54x180',632],['54x200',702]],
+  'Canvas Standard 3/4':[['8x10',35],['8x12',40],['10x10',40],['12x12',45],['11x14',50],['14x14',55],['12x16',55],['10x20',58],['12x18',58],['16x16',65],['16x20',75],['18x20',80],['18x24',90],['20x20',90],['20x26',99],['20x32',125],['24x36',165],['30x40',199],['36x36',225],['40x40',280],['40x60',420],['40x90',550],['40x120',799]],
+  'Canvas Gallery 1.5':[['8x10',45],['8x12',50],['10x10',50],['12x12',60],['11x14',60],['14x14',65],['12x16',70],['10x20',75],['12x18',75],['16x16',80],['16x20',95],['18x20',105],['18x24',115],['20x20',115],['20x26',139],['20x32',150],['24x36',195],['30x40',235],['36x36',260],['40x40',320],['40x60',470],['40x90',599],['40x120',950]],
+  'Coroplast':[['6x24',25],['6x36',30],['8x10',20],['12x12',30],['12x18',35],['12x24',40],['12x36',45],['12x48',55],['16x20',45],['18x24',50],['20x20',60],['24x24',65],['24x32',70],['24x36',80],['24x48',110],['36x36',120],['36x48',150],['48x48',185],['48x96',300]],
+  'Foamboard':[['6x24',25],['6x36',30],['8x10',20],['12x12',25],['12x18',35],['12x24',45],['12x36',55],['12x48',55],['16x20',50],['18x24',55],['20x20',60],['24x24',65],['24x32',75],['24x36',85],['24x48',120],['36x36',125],['36x48',165],['48x48',195],['48x96',320]],
+  'Banner':[['24x36',90],['24x48',120],['24x54',135],['36x36',140],['36x48',145],['36x54',150],['48x48',170],['48x54',180],['54x54',185],['36x60',185],['48x60',190],['54x60',210],['36x72',220],['48x72',230],['54x72',240],['36x84',250],['54x84',260],['36x96',270],['48x96',280],['54x96',290],['36x108',280],['48x108',290],['54x108',300],['36x120',310],['48x120',320],['54x120',330],['38x140',340],['48x140',350],['54x140',360],['36x160',370],['48x160',380],['54x160',390],['36x180',400],['48x180',410],['54x180',420],['36x200',430],['48x200',440],['54x200',450]],
+  'Popup Banner':[['33x81',199.99]],
+  'Acrylique':null,'Aluminium':null,'Autre':null,
+};
+
+let CATALOG={...CATALOG_DEFAULT};
+
+// Load from Google Sheets (CSV: material, size, price)
+async function loadPricesFromSheets(){
+  try{
+    const resp=await fetch(SHEETS_CSV);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const csv=await resp.text();
+    const lines=csv.trim().split('\n');
+    const tmp={};
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].match(/(".*?"|[^,]+)/g)||[];
+      if(cols.length<3) continue;
+      const mat=cols[0].trim().replace(/^"|"$/g,'');
+      const size=cols[1].trim().replace(/^"|"$/g,'');
+      const price=parseFloat(cols[2]);
+      if(!mat||!size||isNaN(price)) continue;
+      if(!tmp[mat]) tmp[mat]=[];
+      tmp[mat].push([size,price]);
+    }
+    // Merge with defaults (keep null entries, add new)
+    const merged={...CATALOG_DEFAULT};
+    for(const [mat,entries] of Object.entries(tmp)){
+      if(entries.length>0) merged[mat]=entries;
+    }
+    CATALOG=merged;
+    console.log('✅ Prix Google Sheets chargés');
+    updateSizeDropdown(); // refresh dropdown with new prices
+  }catch(e){
+    console.warn('⚠️ Google Sheets indisponible, prix intégrés utilisés.',e.message);
+  }
+}
+loadPricesFromSheets();
+
+// Build size dropdown for current material
+function updateSizeDropdown(){
+  const sp=document.getElementById('sizePreset');
+  const t=T[lang]||T.fr;
+  const entries=CATALOG[selMat];
+  sp.innerHTML='';
+
+  // Quote-only materials
+  if(entries===null||entries===undefined){
+    sp.innerHTML=`<option value="custom">${t.custom||'Format personnalisé...'}</option>`;
+    document.getElementById('customSize').classList.remove('hidden');
+    document.getElementById('sizePriceDisplay').textContent='';
+    toggleCustomPrice();
+    return;
+  }
+
+  // Add placeholder
+  const ph=document.createElement('option');
+  ph.value=''; ph.textContent=t.selectSize||'— Choisir un format —';
+  sp.appendChild(ph);
+
+  // Add custom size option FIRST
+  const customOpt=document.createElement('option');
+  customOpt.value='custom';
+  customOpt.textContent=t.custom||'Format personnalisé...';
+  sp.appendChild(customOpt);
+
+  // Add all sizes with price
+  for(const [size,price] of entries){
+    const opt=document.createElement('option');
+    opt.value=size;
+    const [a,b]=size.split('x').map(Number);
+    const display=`${a}" × ${b}"  —  $${price.toFixed(2)}`;
+    opt.textContent=display;
+    sp.appendChild(opt);
+  }
+
+  // Show/hide custom size inputs
+  document.getElementById('customSize').classList.add('hidden');
+  document.getElementById('sizePriceDisplay').textContent='';
+  toggleCustomPrice();
+}
+
+// Get selected size {w,h}
+function getSize(){
+  const sp=document.getElementById('sizePreset');
+  if(sp.value==='custom'||sp.value===''){
+    const w=parseFloat(document.getElementById('customW').value)||0;
+    const h=parseFloat(document.getElementById('customH').value)||0;
+    if(orient==='landscape') return{w:Math.max(w,h),h:Math.min(w,h)};
+    return{w:Math.min(w,h),h:Math.max(w,h)};
+  }
+  const [a,b]=sp.value.split('x').map(Number);
+  if(orient==='landscape') return{w:Math.max(a,b),h:Math.min(a,b)};
+  return{w:Math.min(a,b),h:Math.max(a,b)};
+}
+
+// Lookup price for a size
+function lookupPrice(material,w,h){
+  // Custom price input takes priority
+  const cpe=document.getElementById('customPrice');
+  const cps=document.getElementById('customPriceSection');
+  if(cpe&&cps&&!cps.classList.contains('hidden')){
+    const v=parseFloat(cpe.value);
+    if(!isNaN(v)&&v>0) return v;
+  }
+  const entries=CATALOG[material];
+  if(!entries||entries===null) return null;
+  const key=`${Math.min(w,h)}x${Math.max(w,h)}`;
+  const exact=entries.find(([s])=>s===key);
+  if(exact) return exact[1];
+  // Find closest fitting size
+  let best=null,bestDiff=Infinity;
+  for(const [s,p] of entries){
+    const [kw,kh]=s.split('x').map(Number);
+    if(kw>=Math.min(w,h)&&kh>=Math.max(w,h)){
+      const diff=(kw-Math.min(w,h))+(kh-Math.max(w,h));
+      if(diff<bestDiff){bestDiff=diff;best=p;}
+    }
+  }
+  return best;
+}
+
+function calcTotal(cartItems){
+  let subtotal=0;
+  const lines=[];
+  for(const item of cartItems){
+    const s=item.sizeObj||{w:0,h:0};
+    const price=(item.overridePrice!==undefined)?item.overridePrice:lookupPrice(item.matVal,s.w,s.h);
+    const linePrice=(price!==null&&price!==undefined)?+(price*item.qty).toFixed(2):null;
+    lines.push({...item,price,linePrice});
+    if(linePrice!==null) subtotal+=linePrice;
+  }
+  subtotal=+subtotal.toFixed(2);
+  const gst=+(subtotal*GST).toFixed(2);
+  const qst=+(subtotal*QST).toFixed(2);
+  const total=+(subtotal+gst+qst).toFixed(2);
+  return{lines,subtotal,gst,qst,total,hasQuote:lines.some(l=>l.price===null)};
+}
+
+
+const T={
+  fr:{
+    title:"Commande en ligne / Order online — ACCO Photo",
+    sub:"Vérifiez la qualité, ajustez le cadrage, puis soumettez toutes vos images en une seule commande.",
+    sizeLabel:"Format d'impression (pouces)", custom:"Format personnalisé...", selectSize:"— Choisir un format —",
+    orientLabel:"Orientation", portrait:"Portrait", landscape:"Paysage",
+    frameNote:"Si vous avez un cadre non standard, mesurez l'ouverture à l'arrière du cadre et entrez cette dimension.",
+    widthLabel:"Largeur (pouces)", heightLabel:"Hauteur (pouces)",
+    materialLabel:"Matériau d'impression",
+    uploadLabel:"Téléverser une photo", dropzone:"Cliquez ou déposez une image ici",
+    tabCrop:"✂️ Recadrer", tabFit:"⬜ Ajuster (bordures blanches)",
+    cropLabel:"Recadrer — déplacez le cadre, ajustez le curseur",
+    zoomLabel:"Zone", cropNote:"La zone dans le cadre sera imprimée. Tout ce qui est à l'extérieur sera coupé.",
+    fitLabel:"Image complète centrée, bordures blanches",
+    fitNote:"Les zones blanches apparaîtront à l'impression.",
+    actualSizeLabel:"Aperçu à la taille réelle d'impression",
+    actualSizeNote:"💡 Cet outil a déjà redimensionné votre image à la taille d'impression exacte @300DPI. Cet aperçu reflète la qualité d'impression réelle, à condition que vous ayez calibré votre écran. Si vous acceptez ce résultat, vous acceptez cette qualité d'impression — le fichier sera enregistré dans les dimensions ajustées.\n\nFaites défiler (haut/bas ou gauche/droite) pour voir l'image complète.",
+    calibrateBtn:"🔧 Calibrer l'écran (carte de crédit ou carte de même taille)",
+    calibratedBadge:"Calibré", calibrateTitle:"Calibrer l'affichage",
+    calibrateInstructions:"Tenez une carte de crédit — ou tout papier découpé à 85,6mm×54mm — contre l'écran et ajustez le curseur jusqu'à ce que les tailles correspondent.",
+    calibrateCancel:"Annuler", calibrateConfirm:"Terminé",
+    qtyLabel:"Quantité", addToCartLabel:"Ajouter au panier",
+    cartAddedMsg:(s,m,q)=>`✅ Ajouté ! ${s} · ${m} · Qté ${q}`,
+    cartLabelText:"Panier", cartEmpty:"Aucune photo dans le panier. Traitez une photo et ajoutez-la ci-dessus.",
+    addAnotherLabel:"Traiter une autre photo", qtyLabel2:"Qté",
+    contactTitle:"Vos coordonnées",
+    contactNote:"Remplissez vos coordonnées avant de traiter vos photos — elles seront incluses dans le nom de chaque fichier.",
+    firstNameLabel:"Prénom", firstNamePlaceholder:"ex : Marie",
+    lastNameLabel:"Nom de famille", lastNamePlaceholder:"ex : Tremblay",
+    phoneLabel:"Téléphone", phonePlaceholder:"ex : 514-555-0123",
+    emailLabel:"Courriel", emailPlaceholder:"ex : marie@courriel.com",
+    sendBtnLabel:"Soumettre la commande", sending:"Envoi en cours...",
+    nameRequired:"Veuillez entrer votre prénom et nom de famille.",
+    emailRequired:"Veuillez entrer votre adresse courriel.",
+    cartEmptyError:"Veuillez ajouter au moins une photo au panier avant de soumettre.",
+    subtotal:"Sous-total", totalLabel:"Total (taxes incluses)",
+    quoteRequired:"Sur devis",
+    quoteNote:"Certains articles nécessitent un devis — nous vous contacterons après réception de votre commande.",
+    customPriceTitle:"Commande sur mesure",
+    customProductLabel:"Description du produit",
+    customPriceLabel:"Prix (avant taxes, $)",
+    customPriceNote:"Entrez le prix convenu. Laissez vide si à déterminer.",
+    orderReadyBody:(name,n)=>`Bonjour ${name},\n\nVotre commande ${n} est prête pour la cueillette chez ACCO Photo, pendant nos heures d'ouverture.\n\nConsultez nos heures d'ouverture actuelles ici (mises à jour pour les jours fériés) :\nhttps://www.accophoto.com/form-map\n\nQuestions ? info@accophoto.com\n\nMerci !\nACCO Photo`,
+    filenamePreview:(fn)=>`📄 Nom du fichier : ${fn}`,
+    uploadingMsg:(n,tot)=>`Préparation de l'image ${n} sur ${tot}...`,
+    zippingMsg:'📦 Compression et envoi en cours...',
+    successMsg:(orderNum)=>`✅ Commande soumise avec succès ! Numéro de commande : <strong>${orderNum}</strong><br>Veuillez compléter le paiement ci-dessous. Nous préparerons votre commande dès réception du paiement.`,
+    uploadErrorMsg:`⚠️ L'envoi a échoué. Veuillez vérifier votre connexion internet et réessayer. Si le problème persiste, contactez-nous : info@accophoto.com`,
+    etransferTitle:"💳 Paiement par virement Interac (e-Transfer)",
+    etransferSteps:(orderNum)=>[
+      `Ouvrez votre application bancaire et sélectionnez <strong>Virement Interac</strong>`,
+      `Envoyez le paiement à <strong>info@accophoto.com</strong>`,
+      `Dans le champ <em>Message / Note</em>, inscrivez votre numéro de commande : <strong>${orderNum}</strong>`,
+      `Une fois le paiement effectué, votre commande sera traitée dans les plus brefs délais.`,
+      `Vous recevrez un courriel de confirmation lorsque votre commande sera prête pour la cueillette.`,
+    ],
+    good:"Excellente qualité", ok:"Qualité acceptable",
+    bad:"⚠️ Résolution basse — le résultat pourrait ne pas être idéal",
+    origSize:"Taille originale : ", printSize:"Format : ", px:"pixels",
+    msgGood:(w,h,dpi)=>`${dpi} DPI — excellent pour ${w}"×${h}". Standard professionnel atteint (300 DPI).`,
+    msgOk:(w,h,dpi)=>`${dpi} DPI — acceptable pour ${w}"×${h}". Légèrement en dessous de 300 DPI.`,
+    msgBad:()=>`Consultez l'aperçu ci-dessous pour juger si le résultat vous convient.`,
+    lowQWarn:(w,h,dpi)=>`<strong>⚠️ Résolution basse — pourrait apparaître flou en ${w}"×${h}" (${dpi} DPI)</strong>
+Nous pouvons imprimer telle quelle — consultez d'abord l'aperçu ci-dessous.<br><br>
+<strong>Si l'aperçu ne convient pas :</strong><br>
+① <strong>Choisir un format plus petit</strong> — remontez et sélectionnez un format réduit.<br>
+② <strong>Retéléverser le fichier original</strong> — les photos sont souvent compressées par les plateformes de médias sociaux. Retrouvez l'original dans votre galerie et retéléversez-le ici.<br><br>
+💡 <em>Pour les prochaines photos : réglez votre appareil photo à la résolution maximale.</em>`,
+    orderReadySubject:(n)=>`Votre commande est prête — ${n}`,
+    orderReadyBody:(name,n)=>`Bonjour ${name},\n\nVotre commande ${n} est prête pour la cueillette chez ACCO Photo, pendant nos heures d'ouverture.\n\nQuestions ? info@accophoto.com\n\nMerci !\nACCO Photo`,
+  },
+  en:{
+    title:"Commande en ligne / Order online — ACCO Photo",
+    sub:"Check quality, adjust cropping, then submit all images in a single order.",
+    sizeLabel:"Print size (inches)", custom:"Custom size...", selectSize:"— Select a size —",
+    orientLabel:"Orientation", portrait:"Portrait", landscape:"Landscape",
+    frameNote:"If you have a non-standard frame, measure the opening at the back and enter those dimensions.",
+    widthLabel:"Width (inches)", heightLabel:"Height (inches)",
+    materialLabel:"Print material",
+    uploadLabel:"Upload a photo", dropzone:"Click or drop an image here",
+    tabCrop:"✂️ Crop", tabFit:"⬜ Fit (white borders)",
+    cropLabel:"Crop — drag the box, adjust the slider",
+    zoomLabel:"Area", cropNote:"The area inside the box will be printed. Everything outside will be cut off.",
+    fitLabel:"Full image centred, white borders",
+    fitNote:"White areas will appear at print.",
+    actualSizeLabel:"Preview at actual print size",
+    actualSizeNote:"💡 This tool has already resized your image to the exact print size @300DPI. This preview reflects the actual print quality, provided you have calibrated your screen. If you accept what you see, you accept this print quality — the file will be saved at the adjusted size.\n\nScroll up/down or left/right to see the full image.",
+    calibrateBtn:"Calibrate (credit card or same size)",
+    calibratedBadge:"Calibrated", calibrateTitle:"Calibrate display size",
+    calibrateInstructions:"Hold a credit card — or any paper cut to 85.6mm×54mm — against the screen and drag the slider until they match.",
+    calibrateCancel:"Cancel", calibrateConfirm:"Done",
+    qtyLabel:"Quantity", addToCartLabel:"Add to cart",
+    cartAddedMsg:(s,m,q)=>`✅ Added! ${s} · ${m} · Qty ${q}`,
+    cartLabelText:"Cart", cartEmpty:"No photos in the cart. Process a photo and add it above.",
+    addAnotherLabel:"Process another photo", qtyLabel2:"Qty",
+    contactTitle:"Your contact details",
+    contactNote:"Please fill in your details before processing your photos — they will be included in each file name.",
+    firstNameLabel:"First name", firstNamePlaceholder:"e.g. Marie",
+    lastNameLabel:"Last name", lastNamePlaceholder:"e.g. Tremblay",
+    phoneLabel:"Phone", phonePlaceholder:"e.g. 514-555-0123",
+    emailLabel:"Email", emailPlaceholder:"e.g. marie@email.com",
+    sendBtnLabel:"Submit order", sending:"Sending...",
+    nameRequired:"Please enter your first and last name.",
+    emailRequired:"Please enter your email address.",
+    cartEmptyError:"Please add at least one photo to the cart before submitting.",
+    subtotal:"Subtotal", totalLabel:"Total (taxes included)",
+    quoteRequired:"Quote required",
+    quoteNote:"Some items require a quote — we will contact you after receiving your order.",
+    customPriceTitle:"Custom size order",
+    customProductLabel:"Product description",
+    customPriceLabel:"Price (before taxes, $)",
+    customPriceNote:"Enter the agreed price. Leave blank if to be determined.",
+    orderReadyBody:(name,n)=>`Hi ${name},\n\nYour order ${n} is ready for pickup at ACCO Photo, during our business hours.\n\nPlease check our current hours here (updated for holidays):\nhttps://www.accophoto.com/form-map\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+    filenamePreview:(fn)=>`📄 File name: ${fn}`,
+    uploadingMsg:(n,tot)=>`Preparing image ${n} of ${tot}...`,
+    zippingMsg:'📦 Compressing and uploading...',
+    successMsg:(orderNum)=>`✅ Order submitted! Order number: <strong>${orderNum}</strong><br>Please complete payment below. We will prepare your order once payment is received.`,
+    uploadErrorMsg:`⚠️ Upload failed. Please check your internet connection and try again. If the problem persists, contact us: info@accophoto.com`,
+    etransferTitle:"💳 Payment by Interac e-Transfer",
+    etransferSteps:(orderNum)=>[
+      `Open your banking app and select <strong>Interac e-Transfer</strong>`,
+      `Send payment to <strong>info@accophoto.com</strong>`,
+      `In the <em>Message / Note</em> field, enter your order number: <strong>${orderNum}</strong>`,
+      `Once payment is received, your order will be processed promptly.`,
+      `You will receive an email when your order is ready for pickup.`,
+    ],
+    good:"Excellent quality", ok:"Acceptable quality",
+    bad:"⚠️ Low resolution — print result may not be ideal",
+    origSize:"Original: ", printSize:"Size: ", px:"pixels",
+    msgGood:(w,h,dpi)=>`${dpi} DPI — excellent for ${w}"×${h}". Meets the 300 DPI professional standard.`,
+    msgOk:(w,h,dpi)=>`${dpi} DPI — acceptable for ${w}"×${h}". Slightly below 300 DPI.`,
+    msgBad:()=>`Check the preview below to judge whether the result is acceptable.`,
+    lowQWarn:(w,h,dpi)=>`<strong>⚠️ Low resolution — may appear blurry at ${w}"×${h}" (${dpi} DPI)</strong>
+We can print as-is — please check the preview below first.<br><br>
+<strong>If the preview is not acceptable:</strong><br>
+① <strong>Choose a smaller print size</strong> — go back and select a smaller format.<br>
+② <strong>Re-upload the original file</strong> — photos are often compressed by social media apps. Find the original in your gallery and re-upload it here.<br><br>
+💡 <em>For future photos: set your camera to maximum resolution.</em>`,
+    orderReadySubject:(n)=>`Your order is ready for pickup — ${n}`,
+    orderReadyBody:(name,n)=>`Hi ${name},\n\nYour order ${n} is ready for pickup at ACCO Photo, during our business hours.\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+  },
+  zh:{
+    title:"在线下单 / Order online — ACCO Photo",
+    sub:"检测图片画质，调整裁剪，一次性提交全部打印订单。",
+    sizeLabel:"选择打印尺寸（英寸）", custom:"自定义尺寸...", selectSize:"— 选择尺寸 —",
+    orientLabel:"打印方向", portrait:"竖向", landscape:"横向",
+    frameNote:"如果您有非标准尺寸画框，请按照画框后面的开口测量，并输入要打印的自定义尺寸。",
+    widthLabel:"宽度 (英寸)", heightLabel:"高度 (英寸)",
+    materialLabel:"打印材料",
+    uploadLabel:"上传图片", dropzone:"点击或拖拽图片到这里",
+    tabCrop:"✂️ 裁剪", tabFit:"⬜ Fit（保留完整图片，白边填充）",
+    cropLabel:"裁剪 — 拖动方框，调整滑块",
+    zoomLabel:"裁剪范围", cropNote:"方框内是将被打印的部分，方框外区域会被裁掉。",
+    fitLabel:"完整图片居中，四周用白色填充",
+    fitNote:"白色区域是填充部分，打印时会出现白边。",
+    actualSizeLabel:"预览实际打印大小",
+    actualSizeNote:"💡 本工具已将您的图片调整为打印尺寸@300DPI。此预览是在您按照要求校准屏幕后的实际打印效果，打印质量将接近此效果。如果您接受此预览效果，即表示您接受这样的打印质量，文件将保存为调整后的尺寸。\n\n上下或左右滑动可查看完整图片。",
+    calibrateBtn:"用信用卡（或同尺寸卡片）校准屏幕",
+    calibratedBadge:"已校准", calibrateTitle:"校准您的屏幕显示尺寸",
+    calibrateInstructions:"请准备一张信用卡，或任何标准信用卡尺寸的卡片/纸张（85.6mm×54mm），贴在屏幕上与下方蓝色方块比对，拖动滑块调整大小，直到两者完全一致。",
+    calibrateCancel:"取消", calibrateConfirm:"完成",
+    qtyLabel:"数量", addToCartLabel:"加入购物车",
+    cartAddedMsg:(s,m,q)=>`✅ 已加入！${s} · ${m} · 数量 ${q}`,
+    cartLabelText:"购物车", cartEmpty:"购物车为空，请先处理一张图片并加入购物车。",
+    addAnotherLabel:"继续处理下一张图片", qtyLabel2:"数量",
+    contactTitle:"您的联系方式",
+    contactNote:"请先填写联系方式再处理照片——您的姓名会自动包含在每个文件名中。",
+    firstNameLabel:"名", firstNamePlaceholder:"例：Marie / 芳",
+    lastNameLabel:"姓", lastNamePlaceholder:"例：Tremblay / 王",
+    phoneLabel:"电话", phonePlaceholder:"例：514-555-0123",
+    emailLabel:"Email", emailPlaceholder:"例：marie@email.com",
+    sendBtnLabel:"提交全部订单", sending:"发送中...",
+    nameRequired:"请输入您的姓名。",
+    emailRequired:"请输入您的Email。",
+    cartEmptyError:"请先将至少一张图片加入购物车再提交。",
+    subtotal:"小计", totalLabel:"总计（含税）",
+    quoteRequired:"需要报价",
+    quoteNote:"部分商品需要单独报价——我们收到订单后会与您联系确认。",
+    customPriceTitle:"自定义尺寸订单",
+    customProductLabel:"产品描述",
+    customPriceLabel:"价格（税前，$）",
+    customPriceNote:"请输入已商议的价格（税前）。如未确定可留空。",
+    orderReadyBody:(name,n)=>`您好 ${name}，\n\n您的订单 ${n} 已经完成，随时可以来 ACCO Photo 取件，请在我们营业时间内前来。\n\n请查看我们最新营业时间（节假日会提前更新）：\nhttps://www.accophoto.com/form-map\n\n问题请联系：info@accophoto.com\n\n感谢您的惠顾！\nACCO Photo`,
+    filenamePreview:(fn)=>`📄 文件名：${fn}`,
+    uploadingMsg:(n,tot)=>`正在准备第 ${n} 张，共 ${tot} 张...`,
+    zippingMsg:'📦 正在打包并上传...',
+    successMsg:(orderNum)=>`✅ 订单提交成功！订单号：<strong>${orderNum}</strong><br>请按下方说明完成付款，我们收到付款后会立即处理您的订单。`,
+    uploadErrorMsg:`⚠️ 上传失败，请检查您的网络连接后重试。如果问题持续，请联系我们：info@accophoto.com`,
+    etransferTitle:"💳 Interac 电子转账付款",
+    etransferSteps:(orderNum)=>[
+      `打开您的网上银行 App，选择 <strong>Interac 电子转账（e-Transfer）</strong>`,
+      `收款人电子邮箱：<strong>info@accophoto.com</strong>`,
+      `在<em>留言/备注</em>栏填写您的订单号：<strong>${orderNum}</strong>`,
+      `付款完成后，我们会尽快处理您的订单。`,
+      `订单完成后，您将收到取件通知邮件。`,
+    ],
+    good:"画质优秀", ok:"画质可接受",
+    bad:"⚠️ 画质偏低，打印效果可能不理想",
+    origSize:"图片原始尺寸：", printSize:"打印尺寸：", px:"像素",
+    msgGood:(w,h,dpi)=>`${dpi} DPI — 非常适合 ${w}"×${h}"。达到 300 DPI 专业标准。`,
+    msgOk:(w,h,dpi)=>`${dpi} DPI — 基本可以打印 ${w}"×${h}"。略低于 300 DPI 标准。`,
+    msgBad:()=>`请参考下方实际打印大小预览自行判断效果。`,
+    lowQWarn:(w,h,dpi)=>`<strong>⚠️ 画质偏低，打印 ${w}"×${h}" 可能会出现模糊（${dpi} DPI）</strong>
+我们可以照常打印——请先参考下方预览判断效果。<br><br>
+<strong>如果预览效果不满意：</strong><br>
+① <strong>缩小打印尺寸</strong>——回到上方选择更小的规格。<br>
+② <strong>找到原始文件重新上传</strong>——很多时候图片通过社交媒体软件转发时被自动压缩了。请在手机相册或电脑中找到原始文件，重新上传到本页面。<br><br>
+💡 <em>给下次拍照的小提示：在手机相机设置中选择最高分辨率。</em>`,
+    orderReadySubject:(n)=>`您的订单已完成，可以取件了 — ${n}`,
+    orderReadyBody:(name,n)=>`您好 ${name}，\n\n您的订单 ${n} 已经完成，随时可以来 ACCO Photo 取件，请在我们营业时间内前来。\n\n问题请联系：info@accophoto.com\n\n感谢您的惠顾！\nACCO Photo`,
+  }
+};
+
+// ── STATE ─────────────────────────────────────────────────────
+let lang='fr', img=new Image(), imgW=0,imgH=0, lowQ=false;
+let orient='portrait', mode='crop', selMat='Papier Photo', qty=1;
+let cart=[], orderNum=genNum();
+
+function genNum(){
+  const n=new Date(), p=v=>String(v).padStart(2,'0');
+  const dateKey=`${n.getFullYear()}${p(n.getMonth()+1)}${p(n.getDate())}`;
+  const timeStr=`${p(n.getHours())}${p(n.getMinutes())}${p(n.getSeconds())}`;
+  // Daily sequence stored in localStorage
+  try{
+    const stored=JSON.parse(localStorage.getItem('acco_daily_seq')||'{}');
+    if(stored.date!==dateKey){ stored.date=dateKey; stored.seq=1; }
+    else { stored.seq=(stored.seq||0)+1; }
+    localStorage.setItem('acco_daily_seq', JSON.stringify(stored));
+    const seq=String(stored.seq).padStart(3,'0');
+    return `ACCO-${dateKey}-${timeStr}-${seq}`;
+  }catch{
+    return `ACCO-${dateKey}-${timeStr}`;
+  }
+}
+
+// ── LANGUAGE ─────────────────────────────────────────────────
+function applyLang(l){
+  lang=l; const t=T[l];
+  const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const ph=(id,v)=>{const e=document.getElementById(id);if(e)e.placeholder=v;};
+  $('t_title',t.title);$('t_sub',t.sub);$('t_sizeLabel',t.sizeLabel);
+  $('t_orientLabel',t.orientLabel);$('t_portrait',t.portrait);$('t_landscape',t.landscape);
+  $('t_frameNote',t.frameNote);$('t_widthLabel',t.widthLabel);$('t_heightLabel',t.heightLabel);
+  $('t_materialLabel',t.materialLabel);
+  $('t_uploadLabel',t.uploadLabel);$('dropzone',t.dropzone);
+  $('t_tabCropLabel',t.tabCrop);$('t_tabFitLabel',t.tabFit);
+  $('t_cropLabel',t.cropLabel);$('t_zoomLabel',t.zoomLabel);$('t_cropNote',t.cropNote);
+  $('t_fitLabel',t.fitLabel);$('t_fitNote',t.fitNote);
+  $('t_actualSizeLabel',t.actualSizeLabel);$('t_actualSizeNote',t.actualSizeNote);
+  $('t_calibrateBtn',t.calibrateBtn);$('t_calibratedBadge',t.calibratedBadge);
+  $('t_calibrateTitle',t.calibrateTitle);$('t_calibrateInstructions',t.calibrateInstructions);
+  $('calibrateCancelBtn',t.calibrateCancel);$('calibrateConfirmBtn',t.calibrateConfirm);
+  $('t_qtyLabel',t.qtyLabel);$('t_addToCartLabel',t.addToCartLabel);
+  $('t_cartLabelText',t.cartLabelText);$('cartEmptyMsg',t.cartEmpty);
+  $('t_addAnotherLabel',t.addAnotherLabel);
+  $('t_contactTitle',t.contactTitle);
+  $('t_contactNote',t.contactNote);
+  $('t_firstNameLabel',t.firstNameLabel);ph('clientFirstName',t.firstNamePlaceholder);
+  $('t_lastNameLabel',t.lastNameLabel);ph('clientLastName',t.lastNamePlaceholder);
+  $('t_phoneLabel',t.phoneLabel);ph('clientPhone',t.phonePlaceholder);
+  $('t_emailLabel',t.emailLabel);ph('clientEmail',t.emailPlaceholder);
+  $('t_sendBtnLabel',t.sendBtnLabel);
+  $('t_customPriceTitle',t.customPriceTitle);
+  $('t_customProductLabel',t.customProductLabel);
+  $('t_customPriceLabel',t.customPriceLabel);
+  // Material button labels
+  MATERIALS.forEach(m=>{
+    document.querySelectorAll(`.material-btn[data-val="${m.val}"]`).forEach(btn=>{
+      btn.textContent=m[l]||m.val;
+    });
+  });
+  // Rebuild size dropdown for current language
+  updateSizeDropdown();
+  updateFilenamePreview();
+  renderCart();
+  if(img.src)runAnalysis();
+}
+document.getElementById('langSelect').addEventListener('change',e=>applyLang(e.target.value));
+
+// ── HELPERS ───────────────────────────────────────────────────
+function clientFullName(){
+  const first=(document.getElementById('clientFirstName').value.trim());
+  const last=(document.getElementById('clientLastName').value.trim());
+  return [first,last].filter(Boolean).join(' ') || 'Client';
+}
+function clientName(){
+  return clientFullName().replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-éèêëàâùûüîïôœçÉÈÊËÀÂÙÛÜÎÏÔŒÇ]/g,'');
+}
+function buildPreviewFilename(){
+  const s=getSize();
+  const name=clientName();
+  const mat=selMat.replace(/\s+/g,'_');
+  const m=mode==='fit'?'Fit':'Crop';
+  return `${orderNum}_1_${name}_${s.w}x${s.h}po_${mat}_${m}.jpg`;
+}
+function updateFilenamePreview(){
+  const t=T[lang];
+  const el=document.getElementById('t_filenamePreview');
+  if(!el||!t?.filenamePreview) return;
+  el.textContent=t.filenamePreview(buildPreviewFilename());
+}
+['clientFirstName','clientLastName'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input', updateFilenamePreview);
+});
+function matLabel(){const m=MATERIALS.find(m=>m.val===selMat);return m?(m[lang]||m.val):selMat;}
+
+// ── ORIENTATION / SIZE / MATERIAL ────────────────────────────
+function setOrientation(o){
+  orient=o;
+  document.getElementById('orientPortrait').classList.toggle('active',o==='portrait');
+  document.getElementById('orientLandscape').classList.toggle('active',o==='landscape');
+  if(img.src){runAnalysis();initCropBox();if(mode==='fit')updateFit();updateActual();}
+  updateFilenamePreview();
+}
+
+// Size dropdown change
+document.getElementById('sizePreset').addEventListener('change',()=>{
+  const sp=document.getElementById('sizePreset');
+  const isCustom=sp.value==='custom';
+  document.getElementById('customSize').classList.toggle('hidden',!isCustom);
+  // Show price for selected size
+  const el=document.getElementById('sizePriceDisplay');
+  if(el){
+    if(isCustom||sp.value===''){el.textContent='';}
+    else{
+      const s=getSize();
+      const p=lookupPrice(selMat,s.w,s.h);
+      el.textContent=p!==null?`✓ $${p.toFixed(2)} / unité`:'';
+    }
+  }
+  if(img.src){runAnalysis();setupCrop();if(mode==='fit')updateFit();updateActual();}
+  toggleCustomPrice();
+  updateFilenamePreview();
+});
+
+['customW','customH'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  if(img.src){runAnalysis();initCropBox();if(mode==='fit')updateFit();updateActual();}
+  toggleCustomPrice();
+  updateFilenamePreview();
+}));
+
+// Material button click
+document.querySelectorAll('.material-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.material-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  selMat=btn.dataset.val;
+  updateSizeDropdown();  // rebuild size list for this material
+  if(img.src){runAnalysis();initCropBox();if(mode==='fit')updateFit();updateActual();}
+  toggleCustomPrice();
+  updateFilenamePreview();
+}));
+
+function toggleCustomPrice(){
+  const matNeedsQuote = CATALOG[selMat]===null || CATALOG[selMat]===undefined;
+  const isCustomSize = document.getElementById('sizePreset').value==='custom';
+  const show = matNeedsQuote || isCustomSize;
+  document.getElementById('customPriceSection').classList.toggle('hidden', !show);
+  if(!show){
+    document.getElementById('customPrice').value='';
+    document.getElementById('customProductName').value='';
+  }
+  document.getElementById('customSize').classList.toggle('hidden', !isCustomSize && !matNeedsQuote);
+}
+
+// ── QTY ───────────────────────────────────────────────────────
+document.getElementById('qtyMinus').addEventListener('click',()=>{if(qty>1){qty--;document.getElementById('qtyDisplay').textContent=qty;}});
+document.getElementById('qtyPlus').addEventListener('click',()=>{qty++;document.getElementById('qtyDisplay').textContent=qty;});
+
+// ── UPLOAD ────────────────────────────────────────────────────
+const dz=document.getElementById('dropzone'),fi=document.getElementById('fileInput');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files.length)loadFile(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files.length)loadFile(e.target.files[0]);});
+function loadFile(file){
+  const r=new FileReader();
+  r.onload=e=>{img=new Image();img.onload=()=>{imgW=img.naturalWidth;imgH=img.naturalHeight;runAnalysis();setupCrop();};img.src=e.target.result;};
+  r.readAsDataURL(file);
+}
+
+// ── ANALYSIS ──────────────────────────────────────────────────
+function runAnalysis(){
+  const t=T[lang],s=getSize(),dpi=Math.min(imgW/s.w,imgH/s.h);
+  let level,msg,cls;
+  const nativeDpiW=(imgW/s.w).toFixed(0), nativeDpiH=(imgH/s.h).toFixed(0);
+  const px300w=(s.w*300).toFixed(0), px300h=(s.h*300).toFixed(0);
+  if(dpi>=300){level=t.good;cls='good';lowQ=false;msg=t.msgGood(s.w,s.h,dpi.toFixed(0));}
+  else if(dpi>=180){level=t.ok;cls='ok';lowQ=false;msg=t.msgOk(s.w,s.h,dpi.toFixed(0));}
+  else{level=t.bad;cls='bad';lowQ=true;msg=t.msgBad();}
+  document.getElementById('analysis').innerHTML=`<div class="result ${cls}"><strong>${level}</strong><br>${t.origSize}${imgW}×${imgH} ${t.px} @ ${Math.min(nativeDpiW,nativeDpiH)} DPI | ${t.printSize}${s.w}"×${s.h}" @ 300 DPI = ${px300w}×${px300h} ${t.px}<br>${msg}</div>`;
+  const wHtml=lowQ?t.lowQWarn(s.w,s.h,dpi.toFixed(0)):'';
+  ['lowQualityWarning','lowQualityWarningFit'].forEach(id=>{const e=document.getElementById(id);if(e){e.innerHTML=wHtml;e.classList.toggle('hidden',!lowQ);}});
+}
+
+// ── CROP ──────────────────────────────────────────────────────
+const cropImg=document.getElementById('cropImg'),cropBox=document.getElementById('cropBox');
+const zoomSlider=document.getElementById('zoomSlider');
+let cs={x:0,y:0,w:0,h:0},dragging=false,ds={x:0,y:0};
+function setupCrop(){
+  document.getElementById('cropCard').classList.remove('hidden');
+  cropImg.src=img.src;
+  cropImg.onload=()=>requestAnimationFrame(initCropBox);
+  if(mode==='fit')updateFit();
+  updateActual();
+}
+function setMode(m){
+  mode=m;
+  document.getElementById('tabCrop').classList.toggle('active',m==='crop');
+  document.getElementById('tabFit').classList.toggle('active',m==='fit');
+  document.getElementById('modeCrop').classList.toggle('hidden',m!=='crop');
+  document.getElementById('modeFit').classList.toggle('hidden',m!=='fit');
+  if(m==='fit'&&img.src)updateFit();
+  if(img.src)updateActual();
+  updateFilenamePreview();
+}
+function ratio(){const s=getSize();return s.w/s.h;}
+function initCropBox(){
+  const dW=cropImg.clientWidth,dH=cropImg.clientHeight,r=ratio();
+  let bW,bH;
+  if(dW/dH>r){bH=dH;bW=bH*r;}else{bW=dW;bH=bW/r;}
+  cs={w:bW,h:bH,x:(dW-bW)/2,y:(dH-bH)/2};
+  applyZoom(zoomSlider.value);drawBox();
+}
+function applyZoom(v){
+  const dW=cropImg.clientWidth,dH=cropImg.clientHeight,r=ratio(),p=v/100;
+  let mW,mH;
+  if(dW/dH>r){mH=dH;mW=mH*r;}else{mW=dW;mH=mW/r;}
+  const cx=cs.x+cs.w/2,cy=cs.y+cs.h/2;
+  cs.w=mW*p;cs.h=mH*p;
+  cs.x=cl(cx-cs.w/2,0,dW-cs.w);cs.y=cl(cy-cs.h/2,0,dH-cs.h);
+}
+function cl(v,a,b){return Math.max(a,Math.min(v,b));}
+function drawBox(){cropBox.style.cssText=`left:${cs.x}px;top:${cs.y}px;width:${cs.w}px;height:${cs.h}px;`;}
+zoomSlider.addEventListener('input',()=>{applyZoom(zoomSlider.value);drawBox();});
+zoomSlider.addEventListener('change',()=>{if(img.src)updateActual();});
+cropBox.addEventListener('mousedown',e=>{dragging=true;const r=cropImg.getBoundingClientRect();ds={x:e.clientX-r.left-cs.x,y:e.clientY-r.top-cs.y};});
+window.addEventListener('mousemove',e=>{if(!dragging)return;const r=cropImg.getBoundingClientRect();cs.x=cl(e.clientX-r.left-ds.x,0,cropImg.clientWidth-cs.w);cs.y=cl(e.clientY-r.top-ds.y,0,cropImg.clientHeight-cs.h);drawBox();});
+window.addEventListener('mouseup',()=>{const was=dragging;dragging=false;if(was&&img.src)updateActual();});
+cropBox.addEventListener('touchstart',e=>{const t=e.touches[0];dragging=true;const r=cropImg.getBoundingClientRect();ds={x:t.clientX-r.left-cs.x,y:t.clientY-r.top-cs.y};},{passive:true});
+window.addEventListener('touchmove',e=>{if(!dragging)return;const t=e.touches[0];const r=cropImg.getBoundingClientRect();cs.x=cl(t.clientX-r.left-ds.x,0,cropImg.clientWidth-cs.w);cs.y=cl(t.clientY-r.top-ds.y,0,cropImg.clientHeight-cs.h);drawBox();},{passive:true});
+window.addEventListener('touchend',()=>{const was=dragging;dragging=false;if(was&&img.src)updateActual();});
+window.addEventListener('resize',()=>{if(img.src)initCropBox();});
+
+// ── FIT ───────────────────────────────────────────────────────
+function updateFit(){
+  const s=getSize(),r=s.w/s.h;
+  const pw=document.getElementById('fitPreviewWrap');
+  const maxW=Math.min(600,pw.clientWidth-28);
+  let dW,dH;
+  if(r>=1){dW=maxW;dH=dW/r;}else{dH=Math.min(maxW/r,420);dW=dH*r;}
+  const fw=document.getElementById('fitCanvasWrap');
+  fw.style.width=dW+'px';fw.style.height=dH+'px';
+  const fi=document.getElementById('fitImg');fi.src=img.src;
+  const ir=imgW/imgH;
+  if(ir>r){fi.style.width='100%';fi.style.height='auto';fi.style.maxHeight=dH+'px';}
+  else{fi.style.height='100%';fi.style.width='auto';fi.style.maxWidth=dW+'px';}
+}
+
+// ── CANVAS ────────────────────────────────────────────────────
+function cropCanvas(){
+  // Step 1: crop from original image using crop box ratio
+  const sc=imgW/cropImg.clientWidth;
+  const srcX=cs.x*sc, srcY=cs.y*sc, srcW=cs.w*sc, srcH=cs.h*sc;
+  // Step 2: output at order size @ 300 DPI
+  const s=getSize();
+  const outW=Math.round(s.w*300);
+  const outH=Math.round(s.h*300);
+  const c=document.createElement('canvas');
+  c.width=outW; c.height=outH;
+  c.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
+  return c;
+}
+function fitCanvas(tw,th){
+  const c=document.createElement('canvas');c.width=tw;c.height=th;
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,tw,th);
+  const ir=imgW/imgH,cr=tw/th;
+  let dw,dh,dx,dy;
+  if(ir>cr){dw=tw;dh=dw/ir;dx=0;dy=(th-dh)/2;}
+  else{dh=th;dw=dh*ir;dx=(tw-dw)/2;dy=0;}
+  ctx.drawImage(img,dx,dy,dw,dh);return c;
+}
+function buildCanvas(){
+  const s=getSize();
+  const outW=Math.round(s.w*300);
+  const outH=Math.round(s.h*300);
+  if(mode==='fit') return fitCanvas(outW, outH);
+  if(!cs.w||!cs.h||!cropImg.clientWidth) return null;
+  return cropCanvas(); // already outputs at 300DPI
+}
+
+// ── ACTUAL SIZE ───────────────────────────────────────────────
+const PPI0=96,CW=3.37,CH=2.125;
+function getPPI(){try{const v=localStorage.getItem('acco_ppi');return v?parseFloat(v):PPI0;}catch{return PPI0;}}
+function setPPI(v){try{localStorage.setItem('acco_ppi',String(v));}catch{}}
+function isCalib(){try{return!!localStorage.getItem('acco_ppi');}catch{return false;}}
+function updateActual(){
+  if(!img.src)return;
+  const s=getSize(),ppi=getPPI();
+  let c;try{c=buildCanvas();if(!c)return;}catch{return;}
+  const ai=document.getElementById('actualSizeImg');
+  ai.src=c.toDataURL('image/jpeg',0.88);
+  ai.style.width=(s.w*ppi)+'px';ai.style.height=(s.h*ppi)+'px';
+  document.getElementById('calibratedBadge').classList.toggle('hidden',!isCalib());
+}
+document.getElementById('calibrateBtn').addEventListener('click',()=>{
+  document.getElementById('calibrateSlider').value=Math.round(getPPI()*CW);
+  renderCalib();document.getElementById('calibrateOverlay').classList.remove('hidden');
+});
+document.getElementById('calibrateCancelBtn').addEventListener('click',()=>document.getElementById('calibrateOverlay').classList.add('hidden'));
+document.getElementById('calibrateConfirmBtn').addEventListener('click',()=>{
+  setPPI(parseFloat(document.getElementById('calibrateSlider').value)/CW);
+  document.getElementById('calibrateOverlay').classList.add('hidden');
+  try{if(img.src)updateActual();}catch{}
+});
+function renderCalib(){const w=parseFloat(document.getElementById('calibrateSlider').value);const c=document.getElementById('calibrateCard');c.style.width=w+'px';c.style.height=(w*CH/CW)+'px';}
+document.getElementById('calibrateSlider').addEventListener('input',renderCalib);
+
+// ── CART ──────────────────────────────────────────────────────
+document.getElementById('addToCartBtn').addEventListener('click',()=>{
+  // If crop box not initialized yet, try now
+  if(!cs.w||!cs.h) initCropBox();
+  const c=buildCanvas();
+  if(!c){
+    // Still null — image not loaded or crop not ready
+    alert(T[lang].uploadLabel || 'Please upload an image first.');
+    return;
+  }
+  const s=getSize(),dpi=Math.min(imgW/s.w,imgH/s.h);
+  const t=T[lang];
+  // Custom product name & price
+  const customSection=document.getElementById('customPriceSection');
+  const isCustom=customSection&&!customSection.classList.contains('hidden');
+  const customProductName=isCustom?(document.getElementById('customProductName').value.trim()||''):'' ;
+  const customPriceVal=isCustom?parseFloat(document.getElementById('customPrice').value):NaN;
+  const ml=customProductName||matLabel();
+  const ss=`${s.w}"×${s.h}"`;
+  const idx=cart.length+1;
+  const fn=`${orderNum}_${idx}_${clientName()}_${s.w}x${s.h}po_${selMat.replace(/\s+/g,'_')}_${mode==='fit'?'Fit':'Crop'}.jpg`;
+  // Thumb
+  const th=document.createElement('canvas');th.width=120;th.height=120;
+  const tc=th.getContext('2d');tc.fillStyle='#eee';tc.fillRect(0,0,120,120);
+  const sc2=Math.min(120/c.width,120/c.height);
+  tc.drawImage(c,(120-c.width*sc2)/2,(120-c.height*sc2)/2,c.width*sc2,c.height*sc2);
+  // Custom price overrides lookup
+  const overridePrice=(!isNaN(customPriceVal)&&customPriceVal>0)?customPriceVal:undefined;
+  cart.push({fn,dataUrl:c.toDataURL('image/jpeg',0.92),thumb:th.toDataURL(),ss,ml,matVal:selMat,sizeObj:{w:s.w,h:s.h},mode,dpi:'300',qty,overridePrice});
+  // Flash
+  const fl=document.getElementById('cartSuccessFlash');
+  fl.className='cart-success-flash';fl.textContent=t.cartAddedMsg(ss,ml,qty);
+  setTimeout(()=>fl.classList.add('hidden'),3500);
+  // Scroll to cart
+  setTimeout(()=>document.getElementById('cartCard').scrollIntoView({behavior:'smooth',block:'start'}),250);
+  renderCart();
+  // Reset
+  img=new Image();imgW=0;imgH=0;lowQ=false;qty=1;
+  document.getElementById('qtyDisplay').textContent='1';
+  document.getElementById('cropCard').classList.add('hidden');
+  document.getElementById('analysis').innerHTML='';
+  fi.value='';dz.textContent=T[lang].dropzone;
+  ['lowQualityWarning','lowQualityWarningFit'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
+  // Reset custom price fields
+  document.getElementById('customProductName').value='';
+  document.getElementById('customPrice').value='';
+});
+document.getElementById('addAnotherBtn').addEventListener('click',()=>fi.click());
+
+// Live update when custom price changes
+document.getElementById('customPrice').addEventListener('input', renderCart);
+document.getElementById('customProductName').addEventListener('input', renderCart);
+
+function renderCart(){
+  const t=T[lang];
+  const totalQty=cart.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartCountBadge').textContent=totalQty;
+  document.getElementById('cartActions').classList.toggle('hidden',cart.length===0);
+  const list=document.getElementById('cartList');
+  if(cart.length===0){list.innerHTML=`<div class="cart-empty">${t.cartEmpty}</div>`;return;}
+
+  const {lines,subtotal,gst,qst,total,hasQuote}=calcTotal(cart);
+  const quoteLabel=t.quoteRequired||'Sur devis / Quote required';
+  const fmt=v=>`$${v.toFixed(2)}`;
+
+  const itemsHtml=lines.map((item,i)=>{
+    const priceStr=item.price!==null
+      ? `${fmt(item.price)} × ${item.qty} = ${fmt(item.linePrice)}`
+      : `<span style="color:#e67e22;">${quoteLabel}</span>`;
+    return `
+    <div class="cart-item">
+      <img class="cart-thumb" src="${item.thumb}">
+      <div class="cart-info">
+        <strong>${item.ss} · ${item.ml}</strong>
+        <div style="font-size:12px;color:#666;">${item.mode==='fit'?'Fit':'Crop'} · ${item.dpi} DPI</div>
+        <div class="small-note">${item.fn}</div>
+        <div class="cart-qty">
+          <span>${t.qtyLabel2} :</span>
+          <button onclick="chgQty(${i},-1)">−</button>
+          <span class="cart-qty-num" id="cq${i}">${item.qty}</span>
+          <button onclick="chgQty(${i},1)">+</button>
+          <span style="margin-left:8px;font-size:13px;color:#333;">${priceStr}</span>
+        </div>
+      </div>
+      <button class="cart-remove" onclick="rmCart(${i})">✕</button>
+    </div>`;
+  }).join('');
+
+  const totalHtml=`
+    <div style="margin-top:12px;padding:14px;background:#f8f9fa;border-radius:10px;border:1px solid #eee;font-size:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span>${t.subtotal||'Sous-total'}</span><span>${hasQuote?`${fmt(subtotal)} + ${quoteLabel}`:fmt(subtotal)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:#666;">
+        <span>TPS / GST (5%)</span><span>${fmt(gst)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;color:#666;">
+        <span>TVQ / QST (9.975%)</span><span>${fmt(qst)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:16px;border-top:1.5px solid #ddd;padding-top:8px;">
+        <span>${t.totalLabel||'Total'}</span>
+        <span style="color:#1a7a3a;">${hasQuote?`${fmt(total)} + ${quoteLabel}`:fmt(total)}</span>
+      </div>
+      ${hasQuote?`<div style="font-size:12px;color:#e67e22;margin-top:6px;">⚠️ ${t.quoteNote||'Certains articles nécessitent un devis — nous vous contacterons.'}</div>`:''}
+    </div>`;
+
+  list.innerHTML=itemsHtml+totalHtml;
+}
+function chgQty(i,d){cart[i].qty=Math.max(1,cart[i].qty+d);renderCart();}
+function rmCart(i){cart.splice(i,1);renderCart();}
+
+// ── QUOTA ─────────────────────────────────────────────────────
+function getQ(){const k='acco_eq',n=new Date(),mk=`${n.getFullYear()}-${n.getMonth()}`;try{const s=JSON.parse(localStorage.getItem(k)||'{}');return s.month===mk?s:{month:mk,count:0};}catch{return{month:mk,count:0};}}
+function incQ(){const q=getQ();q.count++;try{localStorage.setItem('acco_eq',JSON.stringify(q));}catch{}}
+function overQ(){return getQ().count>=MONTHLY;}
+
+// ── GOFILE ────────────────────────────────────────────────────
+async function uploadAll(items, onProg){
+  const totalFiles = items.reduce((s,i)=>s+i.qty, 0);
+
+  // Step 1: build ZIP with all images
+  const zip = new JSZip();
+  let fileCount = 0;
+  for(const item of items){
+    const blob = await(await fetch(item.dataUrl)).blob();
+    for(let q=0; q<item.qty; q++){
+      onProg(fileCount, totalFiles);
+      const qsuf = item.qty>1 ? `_copy${q+1}` : '';
+      const filename = item.fn.replace('.jpg', qsuf+'.jpg');
+      zip.file(filename, blob);
+      fileCount++;
+    }
+  }
+
+  // Step 2: generate ZIP blob
+  onProg(totalFiles, totalFiles); // show 100% while zipping
+  const zipBlob = await zip.generateAsync({type:'blob', compression:'STORE'});
+  const zipName = `${items[0]?.fn.split('_')[0]||'ACCO'}_commande.zip`;
+
+  // Step 3: get best Gofile server
+  const sr = await fetch('https://api.gofile.io/servers');
+  const sd = await sr.json();
+  const server = sd.data.servers[0].name;
+
+  // Step 4: upload single ZIP file
+  const fd = new FormData();
+  fd.append('file', zipBlob, zipName);
+  const up = await fetch(`https://${server}.gofile.io/uploadFile`, {method:'POST', body:fd});
+  const text = await up.text();
+  let ud;
+  try{ ud = JSON.parse(text); }
+  catch(e){ throw new Error('Gofile response not JSON: '+text.slice(0,120)); }
+  if(ud.status !== 'ok') throw new Error('Gofile: '+ud.status);
+
+  return ud.data.downloadPage; // direct download link to the ZIP
+}
+
+// ── SEND ──────────────────────────────────────────────────────
+document.getElementById('sendBtn').addEventListener('click',async()=>{
+  const t=T[lang];
+  const firstName=document.getElementById('clientFirstName').value.trim();
+  const lastName=document.getElementById('clientLastName').value.trim();
+  const name=clientFullName();
+  const phone=document.getElementById('clientPhone').value.trim();
+  const email=document.getElementById('clientEmail').value.trim();
+  if(!firstName && !lastName){showSt('error',t.nameRequired);return;}
+  if(!email){showSt('error',t.emailRequired);return;}
+  if(cart.length===0){showSt('error',t.cartEmptyError);return;}
+
+  const btn=document.getElementById('sendBtn');
+  btn.disabled=true;
+  document.getElementById('t_sendBtnLabel').textContent=t.sending;
+  hideSt();
+  document.getElementById('uploadProgressSection').classList.remove('hidden');
+
+  try{
+    const totalFiles=cart.reduce((s,i)=>s+i.qty,0);
+    const folderLink=await uploadAll(cart,(done,tot)=>{
+      if(done>=tot){
+        document.getElementById('uploadProgressLabel').textContent=t.zippingMsg||'📦 Compression en cours...';
+        document.getElementById('progressBar').style.width='90%';
+      } else {
+        document.getElementById('uploadProgressLabel').textContent=t.uploadingMsg(done+1,tot);
+        document.getElementById('progressBar').style.width=Math.round((done/tot)*80)+'%';
+      }
+    });
+    document.getElementById('progressBar').style.width='100%';
+    document.getElementById('uploadProgressSection').classList.add('hidden');
+
+    const {lines:priceLines, subtotal, gst, qst, total, hasQuote} = calcTotal(cart);
+    const fmt=v=>`$${v.toFixed(2)}`;
+    const summary=priceLines.map((item,i)=>{
+      const priceStr=item.price!==null
+        ? `${fmt(item.price)} × ${item.qty} = ${fmt(item.linePrice)}`
+        : {fr:'Sur devis',en:'Quote required',zh:'需要报价'}[lang]||'Sur devis';
+      const L={
+        fr:{art:`Article ${i+1}`,size:'Taille   ',mat:'Matériau ',mode:'Mode     ',price:'Prix     ',file:'Fichier  ',sub:'Sous-total',total:'TOTAL',quote:' + devis'},
+        en:{art:`Item ${i+1}`,size:'Size     ',mat:'Material ',mode:'Mode     ',price:'Price    ',file:'File     ',sub:'Subtotal  ',total:'TOTAL',quote:' + quote'},
+        zh:{art:`项目 ${i+1}`,size:'尺寸     ',mat:'材料     ',mode:'模式     ',price:'价格     ',file:'文件     ',sub:'小计      ',total:'总计',quote:' + 报价'},
+      }[lang]||{art:`Article ${i+1}`,size:'Taille   ',mat:'Matériau ',mode:'Mode     ',price:'Prix     ',file:'Fichier  ',sub:'Sous-total',total:'TOTAL',quote:' + devis'};
+      return [
+        `┌─ ${L.art} ─────────────────────────`,
+        `│ ${L.size}: ${item.ss}`,
+        `│ ${L.mat}: ${item.ml}`,
+        `│ ${L.mode}: ${item.mode==='fit'?'Fit':'Crop'} — ${item.dpi} DPI`,
+        `│ ${L.price}: ${priceStr}`,
+        `│ ${L.file}: ${item.fn}`,
+        `└────────────────────────────────────`,
+      ].join('\n');
+    }).join('\n')+
+    `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    ({fr:`  Sous-total : ${fmt(subtotal)}\n  TPS/GST 5% : ${fmt(gst)}\n  TVQ/QST 9.975% : ${fmt(qst)}`,
+      en:`  Subtotal : ${fmt(subtotal)}\n  GST/TPS 5% : ${fmt(gst)}\n  QST/TVQ 9.975% : ${fmt(qst)}`,
+      zh:`  小计 : ${fmt(subtotal)}\n  GST/TPS 5% : ${fmt(gst)}\n  QST/TVQ 9.975% : ${fmt(qst)}`,
+    }[lang]||`  Sous-total : ${fmt(subtotal)}\n  TPS/GST 5% : ${fmt(gst)}\n  TVQ/QST 9.975% : ${fmt(qst)}`)+
+    `\n  ${{fr:'TOTAL',en:'TOTAL',zh:'总计'}[lang]||'TOTAL'} : ${fmt(total)}${hasQuote?{fr:' + devis',en:' + quote',zh:' + 报价'}[lang]||'':''}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    // EmailJS (text only, no image data)
+    let emailSent = false;
+    if(!overQ()){
+      const payload={
+        order_number:orderNum, client_name:name, client_phone:phone, client_email:email,
+        print_size:cart.map(c=>c.ss).join(', '),
+        material:cart.map(c=>c.ml).join(', '),
+        mode:cart.map(c=>c.mode).join(', '),
+        filename:summary,
+        image_data:`📁 Dossier / Folder (${totalFiles} fichier(s)):\n${folderLink}`,
+        lang, is_ready_notification:'false', ready_subject:'', ready_body:'',
+        email_subject:{
+          fr:`🖼️ [ACCO] Nouvelle commande image — ${orderNum} — ${name}`,
+          en:`🖼️ [ACCO] New image order — ${orderNum} — ${name}`,
+          zh:`🖼️ [ACCO] 新图片订单 — ${orderNum} — ${name}`,
+        }[lang]||`🖼️ [ACCO] Nouvelle commande image — ${orderNum} — ${name}`,
+      };
+      // Send to shop (template_byqjw25 — To Email = info@accophoto.com)
+      try{
+        await emailjs.send(EJ_SVC, EJ_TPL, payload);
+        emailSent = true;
+        incQ();
+      }catch(e){
+        console.error('EmailJS to shop error:', e?.text || e?.status || JSON.stringify(e));
+      }
+      // Send confirmation to client (pr5vbfv — To Email = {{client_email}})
+      const t_=T[lang];
+      const confirmSubject = {
+        fr:`🖼️ Confirmation de commande image — ${orderNum}`,
+        en:`🖼️ Image print order confirmation — ${orderNum}`,
+        zh:`🖼️ 图片打印订单确认 — ${orderNum}`,
+      }[lang]||`Order ${orderNum}`;
+      const confirmBody = {
+        fr:`Bonjour ${name},\n\nNous avons bien reçu votre commande ${orderNum}. Nous la traiterons dès réception de votre paiement.\n\nRécapitulatif :\n${summary}\n\nPour toute question : info@accophoto.com\n\nMerci !\nACCO Photo`,
+        en:`Hi ${name},\n\nWe have received your order ${orderNum}. We will process it once payment is received.\n\nSummary:\n${summary}\n\nQuestions? info@accophoto.com\n\nThank you!\nACCO Photo`,
+        zh:`您好 ${name}，\n\n我们已收到您的订单 ${orderNum}，收到付款后将立即处理。\n\n订单摘要：\n${summary}\n\n如有问题请联系：info@accophoto.com\n\n感谢您的惠顾！\nACCO Photo`,
+      }[lang]||`Order ${orderNum} received.`;
+      try{
+        await emailjs.send(EJ_SVC, 'template_pr5vbfv', {
+          order_number:orderNum, client_name:name, client_phone:phone, client_email:email,
+          print_size:'', material:'', mode:'', filename:orderNum,
+          image_data:'', lang,
+          is_ready_notification:'false',
+          ready_subject: confirmSubject,
+          ready_body: confirmBody,
+        });
+      }catch(e){
+        console.error('EmailJS to client error:', e?.text || e?.status || JSON.stringify(e));
+      }
+    }
+
+    // Save order to localStorage (for admin.html)
+    try{
+      const orders=JSON.parse(localStorage.getItem('acco_orders')||'[]');
+      orders.unshift({
+        orderNum, name, phone, email, lang,
+        items:cart.map(c=>({fn:c.fn,ss:c.ss,ml:c.ml,mode:c.mode,dpi:c.dpi,qty:c.qty})),
+        links:[folderLink], date:new Date().toISOString(), status:'pending', paid:false,
+        subtotal, gst, qst, total, type:'image',
+      });
+      localStorage.setItem('acco_orders',JSON.stringify(orders));
+    }catch(e){}
+
+    // Show success + e-transfer (NO folder link shown to customer)
+    // Calculate total before clearing cart
+    const orderTotal=calcTotal(cart);
+
+    // Append email status note for debugging
+    const emailNote = emailSent ? '' : `<br><small style="color:#e67e22;">⚠️ Note interne: EmailJS n'a pas pu envoyer la notification — vérifiez la console du navigateur (F12).</small>`;
+    showSt('success', t.successMsg(orderNum) + emailNote);
+    showEtransfer(orderNum, t, orderTotal);
+
+    cart=[];renderCart();
+    orderNum=genNum();
+
+  }catch(err){
+    console.error('Upload error:',err);
+    document.getElementById('uploadProgressSection').classList.add('hidden');
+    showSt('error', `${t.uploadErrorMsg}<br><br><small style="opacity:0.7">Error detail: ${err?.message||String(err)}</small>`);
+  }
+  btn.disabled=false;
+  document.getElementById('t_sendBtnLabel').textContent=T[lang].sendBtnLabel;
+});
+
+function showEtransfer(num, t, orderTotal){
+  const box=document.getElementById('etransferBox');
+  document.getElementById('etransferOrderNum').textContent=num;
+  document.getElementById('t_etransferTitle').textContent=t.etransferTitle;
+
+  // Show amount prominently
+  const amountEl=document.getElementById('etransferAmount');
+  if(amountEl){
+    if(orderTotal&&!orderTotal.hasQuote){
+      amountEl.innerHTML=`<div style="font-size:28px;font-weight:800;color:#1a5276;margin:10px 0;">$${orderTotal.total.toFixed(2)} CAD</div>
+        <div style="font-size:12px;color:#555;">${t.subtotal}: $${orderTotal.subtotal.toFixed(2)} + TPS $${orderTotal.gst.toFixed(2)} + TVQ $${orderTotal.qst.toFixed(2)}</div>`;
+    } else if(orderTotal&&orderTotal.hasQuote){
+      amountEl.innerHTML=`<div style="font-size:16px;font-weight:700;color:#e67e22;margin:10px 0;">$${orderTotal.total.toFixed(2)} CAD + ${t.quoteRequired||'devis'}</div>
+        <div style="font-size:12px;color:#555;">${t.quoteNote||''}</div>`;
+    }
+  }
+
+  const ol=document.getElementById('t_etransferSteps');
+  ol.innerHTML=t.etransferSteps(num).map(s=>`<li>${s}</li>`).join('');
+  box.classList.remove('hidden');
+  setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),200);
+}
+
+// ── STATUS ────────────────────────────────────────────────────
+function showSt(type,msg){const e=document.getElementById('sendStatus');e.className='send-status '+type;e.innerHTML=msg;e.classList.remove('hidden');}
+function hideSt(){const e=document.getElementById('sendStatus');e.className='send-status hidden';e.innerHTML='';}
+
+// ── INIT ──────────────────────────────────────────────────────
+applyLang('fr');
+</script>
+</body>
+</html>
