@@ -6,6 +6,27 @@
 <title>Commande en ligne / Order online — ACCO Photo</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const firebaseConfig = {
+  apiKey: "AIzaSyC7bBkXqzJZsV6ljFlNknOoypmewC-i_Tk",
+  authDomain: "accophoto-3b782.firebaseapp.com",
+  projectId: "accophoto-3b782",
+  storageBucket: "accophoto-3b782.firebasestorage.app",
+  messagingSenderId: "599919052393",
+  appId: "1:599919052393:web:c55f7088a55b0b57c744f8"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._saveOrderToFirebase = async function(orderData){
+  try{
+    await addDoc(collection(db,'orders'), orderData);
+    console.log('Order saved to Firebase');
+  }catch(e){console.error('Firebase save failed:',e);}
+};
+</script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: -apple-system,"PingFang SC","Microsoft YaHei",Arial,sans-serif; background:#f4f5f7; margin:0; padding:16px; color:#222; }
@@ -192,6 +213,24 @@ button.green-btn { background:#34c759; }
         <div style="max-width:130px;">
           <label id="t_customPriceLabel" style="font-size:13px;">Prix convenu ($)</label>
           <input type="number" id="customPrice" placeholder="0.00" min="0" step="0.01" style="margin-bottom:0;">
+        </div>
+      </div>
+    </div>
+
+    <!-- 2-up / double print option -->
+    <div style="margin-top:12px;padding:12px;background:#f0f8ff;border:1.5px solid #4a90e2;border-radius:10px;">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;font-size:14px;">
+        <input type="checkbox" id="twoUpMode" style="width:auto;margin:0;" onchange="toggleTwoUp()">
+        <span id="t_twoUpLabel">🪪 Double impression (recto/verso sur une feuille)</span>
+      </label>
+      <div class="small-note" id="t_twoUpNote" style="margin-top:4px;">Ex : permis de conduire recto + verso côte à côte sur une même feuille.</div>
+      <div id="twoUpUpload" class="hidden" style="margin-top:10px;">
+        <label id="t_twoUpUploadLabel" style="font-size:13px;font-weight:600;">2e image (verso / recto verso)</label>
+        <div class="dropzone" id="dropzone2" style="margin-top:6px;font-size:13px;padding:14px;" onclick="document.getElementById('fileInput2').click()">Cliquez pour téléverser la 2e image</div>
+        <input type="file" id="fileInput2" accept="image/jpeg,image/png,image/tiff,image/webp" class="hidden" onchange="loadImage2(this)">
+        <div id="img2preview" class="hidden" style="margin-top:8px;text-align:center;">
+          <img id="img2thumb" style="max-height:100px;max-width:100%;border-radius:6px;border:1px solid #ddd;">
+          <div style="font-size:12px;color:#888;margin-top:4px;" id="img2name"></div>
         </div>
       </div>
     </div>
@@ -474,6 +513,9 @@ const T={
     sizeLabel:"Format d'impression (pouces)", custom:"Format personnalisé...", selectSize:"— Choisir un format —",
     orientLabel:"Orientation", portrait:"Portrait", landscape:"Paysage",
     frameNote:"Si vous avez un cadre non standard, mesurez l'ouverture à l'arrière du cadre et entrez cette dimension.",
+    twoUpLabel:"🪪 Double impression (recto/verso sur une feuille)",
+    twoUpNote:"Ex : permis de conduire recto + verso côte à côte sur une même feuille.",
+    twoUpUploadLabel:"2e image (verso)",
     widthLabel:"Largeur (pouces)", heightLabel:"Hauteur (pouces)",
     materialLabel:"Matériau d'impression",
     uploadLabel:"Téléverser une photo", dropzone:"Cliquez ou déposez une image ici",
@@ -544,6 +586,9 @@ Nous pouvons imprimer telle quelle — consultez d'abord l'aperçu ci-dessous.<b
     sizeLabel:"Print size (inches)", custom:"Custom size...", selectSize:"— Select a size —",
     orientLabel:"Orientation", portrait:"Portrait", landscape:"Landscape",
     frameNote:"If you have a non-standard frame, measure the opening at the back and enter those dimensions.",
+    twoUpLabel:"🪪 Double print (front/back on one sheet)",
+    twoUpNote:"E.g. driver's licence front + back side by side on one sheet.",
+    twoUpUploadLabel:"2nd image (back side)",
     widthLabel:"Width (inches)", heightLabel:"Height (inches)",
     materialLabel:"Print material",
     uploadLabel:"Upload a photo", dropzone:"Click or drop an image here",
@@ -614,6 +659,9 @@ We can print as-is — please check the preview below first.<br><br>
     sizeLabel:"选择打印尺寸（英寸）", custom:"自定义尺寸...", selectSize:"— 选择尺寸 —",
     orientLabel:"打印方向", portrait:"竖向", landscape:"横向",
     frameNote:"如果您有非标准尺寸画框，请按照画框后面的开口测量，并输入要打印的自定义尺寸。",
+    twoUpLabel:"🪪 双联打印（正反面印在同一张纸上）",
+    twoUpNote:"例：驾照正面+背面并排印在同一张纸上。",
+    twoUpUploadLabel:"第2张图片（背面）",
     widthLabel:"宽度 (英寸)", heightLabel:"高度 (英寸)",
     materialLabel:"打印材料",
     uploadLabel:"上传图片", dropzone:"点击或拖拽图片到这里",
@@ -710,6 +758,7 @@ function applyLang(l){
   $('t_title',t.title);$('t_sub',t.sub);$('t_sizeLabel',t.sizeLabel);
   $('t_orientLabel',t.orientLabel);$('t_portrait',t.portrait);$('t_landscape',t.landscape);
   $('t_frameNote',t.frameNote);$('t_widthLabel',t.widthLabel);$('t_heightLabel',t.heightLabel);
+  $('t_twoUpLabel',t.twoUpLabel||'');$('t_twoUpNote',t.twoUpNote||'');$('t_twoUpUploadLabel',t.twoUpUploadLabel||'');
   $('t_materialLabel',t.materialLabel);
   $('t_uploadLabel',t.uploadLabel);$('dropzone',t.dropzone);
   $('t_tabCropLabel',t.tabCrop);$('t_tabFitLabel',t.tabFit);
@@ -950,13 +999,77 @@ function fitCanvas(tw,th){
   else{dh=th;dw=dh*ir;dx=(tw-dw)/2;dy=0;}
   ctx.drawImage(img,dx,dy,dw,dh);return c;
 }
+// ── 2-UP MODE ────────────────────────────────────────────────
+let img2=null; // second image for 2-up
+
+function toggleTwoUp(){
+  const on=document.getElementById('twoUpMode').checked;
+  document.getElementById('twoUpUpload').classList.toggle('hidden',!on);
+  if(!on){img2=null;document.getElementById('img2preview').classList.add('hidden');}
+}
+
+function loadImage2(input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const newImg=new Image();
+    newImg.onload=()=>{
+      img2=newImg;
+      const thumb=document.getElementById('img2thumb');
+      thumb.src=e.target.result;
+      document.getElementById('img2name').textContent=file.name;
+      document.getElementById('img2preview').classList.remove('hidden');
+    };
+    newImg.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function build2UpCanvas(single){
+  // Place two images side by side on the print size
+  const s=getSize();
+  const outW=Math.round(s.w*300);
+  const outH=Math.round(s.h*300);
+  const canvas=document.createElement('canvas');
+  canvas.width=outW; canvas.height=outH;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,outW,outH);
+  // Each image gets half the width
+  const halfW=Math.floor(outW/2);
+  const gap=Math.round(outW*0.01); // 1% gap
+  // Draw image 1 (already processed by buildCanvas) on left half
+  ctx.drawImage(single,0,0,halfW-gap,outH);
+  // Draw image 2 on right half (fit inside)
+  if(img2){
+    const ir=img2.width/img2.height;
+    const cr=(halfW-gap)/outH;
+    let dw,dh,dx,dy;
+    if(ir>cr){dw=halfW-gap;dh=dw/ir;dx=halfW+gap;dy=(outH-dh)/2;}
+    else{dh=outH;dw=dh*ir;dx=halfW+gap+(halfW-gap-dw)/2;dy=0;}
+    ctx.drawImage(img2,dx,dy,dw,dh);
+  }
+  return canvas;
+}
+
 function buildCanvas(){
   const s=getSize();
   const outW=Math.round(s.w*300);
   const outH=Math.round(s.h*300);
-  if(mode==='fit') return fitCanvas(outW, outH);
-  if(!cs.w||!cs.h||!cropImg.clientWidth) return null;
-  return cropCanvas(); // already outputs at 300DPI
+  const twoUp=document.getElementById('twoUpMode')?.checked;
+
+  // Build single image first
+  let single;
+  if(mode==='fit') single=fitCanvas(outW,outH);
+  else{
+    if(!cs.w||!cs.h||!cropImg.clientWidth) return null;
+    single=cropCanvas();
+  }
+  if(!single) return null;
+
+  // If 2-up mode, combine with second image
+  if(twoUp) return build2UpCanvas(single);
+  return single;
 }
 
 // ── ACTUAL SIZE ───────────────────────────────────────────────
@@ -1032,6 +1145,10 @@ document.getElementById('addToCartBtn').addEventListener('click',()=>{
   // Reset custom price fields
   document.getElementById('customProductName').value='';
   document.getElementById('customPrice').value='';
+  // Reset 2-up
+  const twoUpCb=document.getElementById('twoUpMode');
+  if(twoUpCb){twoUpCb.checked=false;toggleTwoUp();}
+  img2=null;
 });
 document.getElementById('addAnotherBtn').addEventListener('click',()=>fi.click());
 
@@ -1255,15 +1372,17 @@ document.getElementById('sendBtn').addEventListener('click',async()=>{
       }
     }
 
-    // Save order to localStorage (for admin.html)
+    // Save order to Firebase (cloud) + localStorage (cache)
+    const orderData = {
+      orderNum, name, phone, email, lang,
+      items:cart.map(c=>({fn:c.fn,ss:c.ss,ml:c.ml,mode:c.mode,dpi:c.dpi,qty:c.qty})),
+      links:[folderLink], date:new Date().toISOString(), status:'pending', paid:false,
+      subtotal, gst, qst, total, type:'image',
+    };
+    if(window._saveOrderToFirebase) window._saveOrderToFirebase(orderData);
     try{
       const orders=JSON.parse(localStorage.getItem('acco_orders')||'[]');
-      orders.unshift({
-        orderNum, name, phone, email, lang,
-        items:cart.map(c=>({fn:c.fn,ss:c.ss,ml:c.ml,mode:c.mode,dpi:c.dpi,qty:c.qty})),
-        links:[folderLink], date:new Date().toISOString(), status:'pending', paid:false,
-        subtotal, gst, qst, total, type:'image',
-      });
+      orders.unshift(orderData);
       localStorage.setItem('acco_orders',JSON.stringify(orders));
     }catch(e){}
 

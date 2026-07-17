@@ -103,7 +103,50 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
 </head>
 <body>
 
-<!-- Login -->
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC7bBkXqzJZsV6ljFlNknOoypmewC-i_Tk",
+  authDomain: "accophoto-3b782.firebaseapp.com",
+  projectId: "accophoto-3b782",
+  storageBucket: "accophoto-3b782.firebasestorage.app",
+  messagingSenderId: "599919052393",
+  appId: "1:599919052393:web:c55f7088a55b0b57c744f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db = db;
+window._fbCollection = collection;
+window._fbDoc = doc;
+window._fbUpdateDoc = updateDoc;
+window._fbDeleteDoc = deleteDoc;
+window._fbAddDoc = addDoc;
+window._fbQuery = query;
+window._fbOrderBy = orderBy;
+window._fbOnSnapshot = onSnapshot;
+
+// Real-time listener — fires whenever orders change in Firebase
+window._startFirebaseListener = function(){
+  const q = query(collection(db, 'orders'), orderBy('date', 'desc'));
+  onSnapshot(q, (snapshot) => {
+    const orders = [];
+    snapshot.forEach(d => orders.push({_id: d.id, ...d.data()}));
+    window._firebaseOrders = orders;
+    // Save to localStorage as cache
+    try{localStorage.setItem('acco_orders', JSON.stringify(orders));}catch{}
+    // Re-render if admin is logged in
+    if(document.getElementById('adminWrap').style.display !== 'none'){
+      renderOrders();
+      renderDocOrders();
+      updateStats();
+    }
+  });
+};
+</script>
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <h2>ACCO Photo Admin</h2>
@@ -907,6 +950,9 @@ function doLogin(){
 function showAdmin(){
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('adminWrap').style.display='block';
+  applyAdminLang(adminLang);
+  // Start Firebase real-time listener
+  if(window._startFirebaseListener) window._startFirebaseListener();
   renderOrders();renderDocOrders();updateStats();
 }
 
@@ -949,10 +995,33 @@ const NOTIFY_TEXT={
 };
 
 // ── DATA ──────────────────────────────────────────────────────
-function getOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]').filter(o=>o.type!=='document');}catch{return[];}}
-function getDocOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]').filter(o=>o.type==='document');}catch{return[];}}
-function getAllOrders(){try{return JSON.parse(localStorage.getItem('acco_orders')||'[]');}catch{return[];}}
-function saveAllOrders(orders){try{localStorage.setItem('acco_orders',JSON.stringify(orders));}catch{}}
+function getOrders(){return getAllOrders().filter(o=>o.type!=='document');}
+function getDocOrders(){return getAllOrders().filter(o=>o.type==='document');}
+function getAllOrders(){
+  // Use Firebase real-time data if available, else localStorage cache
+  if(window._firebaseOrders) return window._firebaseOrders;
+  try{return JSON.parse(localStorage.getItem('acco_orders')||'[]');}catch{return[];}
+}
+function saveAllOrders(orders){
+  // localStorage cache only — actual saves go through Firebase
+  try{localStorage.setItem('acco_orders',JSON.stringify(orders));}catch{}
+}
+
+// Update order status in Firebase
+async function fbUpdateOrder(id, data){
+  if(!window._db||!id) return;
+  try{
+    await window._fbUpdateDoc(window._fbDoc(window._db,'orders',id), data);
+  }catch(e){console.error('Firebase update failed:',e);}
+}
+
+// Delete order from Firebase
+async function fbDeleteOrder(id){
+  if(!window._db||!id) return;
+  try{
+    await window._fbDeleteDoc(window._fbDoc(window._db,'orders',id));
+  }catch(e){console.error('Firebase delete failed:',e);}
+}
 
 function updateStats(){
   const all=getAllOrders();
@@ -1112,6 +1181,8 @@ function renderDocOrders(){
 // ── ACTIONS ───────────────────────────────────────────────────
 function markReady(i){
   const orders=getAllOrders();
+  const o=orders[i];
+  if(o._id) fbUpdateOrder(o._id,{status:'ready'});
   orders[i].status='ready';
   saveAllOrders(orders);
   renderOrders();renderDocOrders();updateStats();
@@ -1159,6 +1230,7 @@ async function confirmPayment(i){
       ready_body:nt.paidBody(o.name,o.orderNum),
     });
     orders[i].status='payment_received';
+    if(o._id) fbUpdateOrder(o._id,{status:'payment_received',payMethod:'Interac',paidAt:new Date().toISOString()});
     saveAllOrders(orders);
     // ── Auto-archive on payment confirmed ──
     archiveOrder(o);
@@ -1282,6 +1354,7 @@ function doInStorePay(idx,method){
   if(!confirm(`Confirmer paiement ${method} pour ${o.name} — $${(o.total||0).toFixed(2)} ?`)) return;
   orders[idx].status='payment_received';
   orders[idx].payMethod=method;
+  if(o._id) fbUpdateOrder(o._id,{status:'payment_received',payMethod:method,paidAt:new Date().toISOString()});
   saveAllOrders(orders);
   archiveOrderWithMethod(o,method);
   renderOrders();renderDocOrders();updateStats();

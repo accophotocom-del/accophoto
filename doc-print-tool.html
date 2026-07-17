@@ -5,7 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ACCO Photo — Impression de documents</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const firebaseConfig = {
+  apiKey: "AIzaSyC7bBkXqzJZsV6ljFlNknOoypmewC-i_Tk",
+  authDomain: "accophoto-3b782.firebaseapp.com",
+  projectId: "accophoto-3b782",
+  storageBucket: "accophoto-3b782.firebasestorage.app",
+  messagingSenderId: "599919052393",
+  appId: "1:599919052393:web:c55f7088a55b0b57c744f8"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._saveOrderToFirebase = async function(orderData){
+  try{
+    await addDoc(collection(db,'orders'), orderData);
+    console.log('Order saved to Firebase');
+  }catch(e){console.error('Firebase save failed:',e);}
+};
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <style>
@@ -2173,13 +2193,15 @@ document.getElementById('sendBtn').addEventListener('click',async()=>{
       });
     }catch(e){console.error('EmailJS client:',e?.text||e);}
 
-    // Save to localStorage
+    // Save to Firebase (cloud) + localStorage (cache)
+    const orderData = {orderNum,name,phone,email,lang,type:'document',
+      items:cart.map(c=>({desc:c.entries.map(e=>e.desc).join(' | '),files:c.entries.map(e=>e.fname),notes:c.notes,lineTotal:c.lineTotal})),
+      links:[folderLink],date:new Date().toISOString(),status:'pending',
+      subtotal, gst, qst, total};
+    if(window._saveOrderToFirebase) window._saveOrderToFirebase(orderData);
     try{
       const orders=JSON.parse(localStorage.getItem('acco_orders')||'[]');
-      orders.unshift({orderNum,name,phone,email,lang,type:'document',
-        items:cart.map(c=>({desc:c.entries.map(e=>e.desc).join(' | '),files:c.entries.map(e=>e.fname),notes:c.notes,lineTotal:c.lineTotal})),
-        links:[folderLink],date:new Date().toISOString(),status:'pending',
-        subtotal, gst, qst, total});
+      orders.unshift(orderData);
       localStorage.setItem('acco_orders',JSON.stringify(orders));
     }catch(e){}
 
