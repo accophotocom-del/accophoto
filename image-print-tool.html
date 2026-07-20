@@ -217,23 +217,6 @@ button.green-btn { background:#34c759; }
       </div>
     </div>
 
-    <!-- 2-up / double print option -->
-    <div style="margin-top:12px;padding:12px;background:#f0f8ff;border:1.5px solid #4a90e2;border-radius:10px;">
-      <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;font-size:14px;">
-        <input type="checkbox" id="twoUpMode" style="width:auto;margin:0;" onchange="toggleTwoUp()">
-        <span id="t_twoUpLabel">🪪 Double impression (recto/verso sur une feuille)</span>
-      </label>
-      <div class="small-note" id="t_twoUpNote" style="margin-top:4px;">Ex : permis de conduire recto + verso côte à côte sur une même feuille.</div>
-      <div id="twoUpUpload" class="hidden" style="margin-top:10px;">
-        <label id="t_twoUpUploadLabel" style="font-size:13px;font-weight:600;">2e image (verso / recto verso)</label>
-        <div class="dropzone" id="dropzone2" style="margin-top:6px;font-size:13px;padding:14px;" onclick="document.getElementById('fileInput2').click()">Cliquez pour téléverser la 2e image</div>
-        <input type="file" id="fileInput2" accept="image/jpeg,image/png,image/tiff,image/webp" class="hidden" onchange="loadImage2(this)">
-        <div id="img2preview" class="hidden" style="margin-top:8px;text-align:center;">
-          <img id="img2thumb" style="max-height:100px;max-width:100%;border-radius:6px;border:1px solid #ddd;">
-          <div style="font-size:12px;color:#888;margin-top:4px;" id="img2name"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- STEP 2 -->
